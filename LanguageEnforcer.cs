@@ -723,7 +723,7 @@ namespace PRoConEvents
 					string result;
 					using (var webClient = new System.Net.WebClient())
 					{
-						result = webClient.DownloadString("https://gitlab.com/e4gl/LanguageEnforcer/-/raw/master/version.txt");
+						result = webClient.DownloadString("https://gitlab.com/e4gl/LanguageEnforcer/-/raw/main/version.txt");
 					}
 					if (result != GetPluginVersion())
 					{
