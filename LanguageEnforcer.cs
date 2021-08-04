@@ -184,6 +184,13 @@ namespace PRoConEvents
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Ban reason", dispNo), measure.PrivateMessage);
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Command", dispNo), measure.Command);
 						break;
+					case BadwordAction.Mute:
+						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
+						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count), measure.Count);
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
+						break;
 					case BadwordAction.ShowRules:
 						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Measure", dispNo), meastring);
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Command", dispNo), measure.Command);
@@ -716,7 +723,7 @@ namespace PRoConEvents
 					string result;
 					using (var webClient = new System.Net.WebClient())
 					{
-						result = webClient.DownloadString("http://le-version.mygigahost.de/version.php");
+						result = webClient.DownloadString("https://gitlab.com/e4gl/LanguageEnforcer/-/raw/master/version.txt");
 					}
 					if (result != GetPluginVersion())
 					{
@@ -1792,6 +1799,39 @@ namespace PRoConEvents
 				}
 			}, null);
 		}
+		
+		public void MutePlayer(string player, string reason)
+        {
+	        if (!_useAdKatsBan && !_useAdKatsPunish) 
+	        {
+		        WriteLog(String.Format("LanguageEnforcer: Player {0} kicked. (Mute & AdKats not available!)"));
+				KickPlayer(player, reason);     
+				return;
+	        }
+	        WriteLog(String.Format("LanguageEnforcer: Player {0} muted over AdKats", player));
+        	ThreadPool.QueueUserWorkItem(callback =>
+        	{
+        		try
+        		{
+        			Thread.Sleep(500);
+	                var requestHashtable = new Hashtable {
+	    				{"caller_identity", GetType().Name},
+	    				{"response_requested", false},
+	    				{"command_type", "player_mute"},
+	    				{"source_name", GetType().Name},
+	    				{"target_name", player},
+	    				{"record_message", reason}
+	    			};
+	    			if (Guids.ContainsKey(player))
+	    				requestHashtable.Add("target_guid", Guids[player]);
+	    			ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
+        		}
+        		catch (Exception exc)
+        		{
+        			WriteLog(exc.ToString());
+        		}
+        	}, null);
+        }
 
 		protected internal void ProconRulzExecuteCommand(string s, int counter)
 		{
@@ -1955,16 +1995,16 @@ namespace PRoConEvents
 		}
 		public string GetPluginVersion()
 		{
-			return "1.0.3.0";
+			return "1.0.4.0";
 		}
 		public string GetPluginAuthor()
 		{
-			return "[SH] PacmanTRT";
+			return "[SH] PacmanTRT, Hedius";
 		}
 
 		public string GetPluginWebsite()
 		{
-			return "bitbucket.org/bsattmann/procon-languageenforcer/";
+			return "gitlab.com/E4GL/LanguageEnforcer";
 		}
 
 		public string GetPluginDescription()
@@ -1979,19 +2019,6 @@ h3{color:#920000; border-bottom:1px solid #ECECEB;}
 blockquote > h4{line-height: 1.5;}
 .table-head{font-weight: bold; white-space: nowrap}
 </style>
-
-<form action=""https://www.paypal.com/cgi-bin/webscr"" method=""post"" target=""_blank"" style=""display: inline;"">
-<input type=""hidden"" name=""cmd"" value=""_donations"">
-<input type=""hidden"" name=""business"" value=""b.sattmann@gmail.com"">
-<input type=""hidden"" name=""lc"" value=""US"">
-<input type=""hidden"" name=""item_name"" value=""PacmanTRT"">
-<input type=""hidden"" name=""item_number"" value=""LangEnforcer"">
-<input type=""hidden"" name=""no_note"" value=""0"">
-<input type=""hidden"" name=""currency_code"" value=""EUR"">
-<input type=""hidden"" name=""bn"" value=""PP-DonationsBF:btn_donate_LG.gif:NonHostedGuest"">
-<input type=""image"" src=""https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif"" border=""0"" name=""submit"" alt=""PayPal - The safer, easier way to pay online!"" style=""height: 20px; margin-left: 135px; margin-top: -28px; position: absolute;"">
-<img alt="""" border=""0"" src=""https://www.paypalobjects.com/en_US/i/scr/pixel.gif"" width=""1"" height=""1"">
-</form>
 
 <h2>Description</h2>
 	<p>This plugin will watch your server's ingame-chat for badwords and does a few other things which can be disabled. 
@@ -2037,6 +2064,8 @@ blockquote > h4{line-height: 1.5;}
 	<blockquote><h4 id=""Category 1 - "">Badwords</h4> The plugin will punish players when their message contains one of these words. Casing doesn't matter here. <p style=""font-size:11px; padding: 0; margin: 0;""><b>Important:</b> Please note that e.g. ""ass"" will also match ""asshole"" or ""smartass"", but it will also match the german word ""wasser"" which just means water.</p></blockquote>
 	<blockquote><h4 id=""Category 1 - "">Regex-Badwords</h4> A far more advanced but also slower way of matching badwords. A <b>simple example</b> is ""noo+b"". The plus means, that the previous letter may be typed more than once. That way the plugin also will recognize when a player writes ""noooob"". If you like the idea, googling for ""C# Regex cheat sheet"" may help you. Casing doesn't matter here either.</blockquote>
 	The plugin tries to persist the wordlists in the according .txt-files. These files are attempted to be loaded when the plugin is enabled.
+	<br/><br/>	
+	AdKats is needed for muting players.
 	<br/><br/>	
 	<h3>Measure overrides</h3>
 	The measures taken against a player can be modified based on sections in the wordlist.</br>
@@ -2200,7 +2229,7 @@ blockquote > h4{line-height: 1.5;}
 		public bool Dead;
 	}
 
-	public enum BadwordAction { ListEnd, Warn, Kill, Kick, TBan, PermBan, Custom, ShowRules }
+	public enum BadwordAction { ListEnd, Warn, Kill, Kick, TBan, PermBan, Mute, Custom, ShowRules }
 
 	public class SuccessiveMeasure
 	{
@@ -2276,6 +2305,12 @@ blockquote > h4{line-height: 1.5;}
 							foreach (var msg in pubMsg)
 								le.Say(ProconUtil.ProcessMessage(msg, player, showNext, 0, quote, true, le));
 						le.BanPlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)));
+						break;
+					case BadwordAction.Mute:
+						if (pubMsg != null)
+							foreach (var msg in pubMsg)
+								le.Say(ProconUtil.ProcessMessage(msg, player, showNext, 0, quote, true, le));
+						le.MutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)));
 						break;
 					case BadwordAction.ShowRules:
 						le.ShowRules(player);
