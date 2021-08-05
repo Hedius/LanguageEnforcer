@@ -1804,7 +1804,7 @@ namespace PRoConEvents
         {
 	        if (!_useAdKatsBan && !_useAdKatsPunish) 
 	        {
-		        WriteLog(String.Format("LanguageEnforcer: Player {0} kicked. (Mute & AdKats not available!)"));
+		        WriteLog(String.Format("LanguageEnforcer: Player {0} kicked. (Mute & AdKats not available!)", player));
 				KickPlayer(player, reason);     
 				return;
 	        }
