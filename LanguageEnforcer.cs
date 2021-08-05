@@ -134,12 +134,12 @@ namespace PRoConEvents
 				yield return YesNoPluginVariable("2 - General|Save counters on every punish", _saveCountersAsap);
 
 			yield return YesNoPluginVariable("2 - General|Let AdKats determine who is an admin", _useAdKatsAdmins);
+			yield return YesNoPluginVariable("2 - General|Log violations to AdKats", _logToAdKats);
 			yield return YesNoPluginVariable("2 - General|Use AdKats punishment", _useAdKatsPunish);
 			if (!_useAdKatsPunish)
 				yield return YesNoPluginVariable("2 - General|Use AdKats to issue kills and bans", _useAdKatsBan);
 		    if (!_useAdKatsAdmins)
 		        yield return YesNoPluginVariable("2 - General|Get Admins from textfile", GetAdminsFromDisk);
-
 			yield return YesNoPluginVariable("2 - General|Look for Updates", LookForUpdates);
 			if (LookForUpdates || getAll)
 				yield return UnIntPluginVariable("2 - General|Look for Updates every X hours", _maxUpdateCounter);
@@ -320,6 +320,9 @@ namespace PRoConEvents
 					return;
 				case "Let AdKats determine who is an admin":
 					_useAdKatsAdmins = strValue == yes;
+					return;
+				case "Log violations to AdKats":
+					_logToAdKats = strValue == yes;
 					return;
 				case "Use AdKats punishment":
 					_useAdKatsPunish = strValue == yes;
@@ -864,6 +867,8 @@ namespace PRoConEvents
 							if (_overrides.ContainsKey(section))
 								mo = _overrides[section];
 						}
+						if (_logToAdKats)
+							LogViolation(speaker, message, match);
 						TakeMeasure(speaker, message, WhitelistOverride(mo, whitelisted));
 						WriteLog(String.Format("LanguageEnforcer: Player {0} triggered the word '{1}'", speaker, match));
 					}
@@ -879,15 +884,18 @@ namespace PRoConEvents
 								if (_overrides.ContainsKey(section))
 									mo = _overrides[section];
 							}
-							TakeMeasure(speaker, message, WhitelistOverride(mo, whitelisted));
+							TakeMeasure(speaker, message, WhitelistOverride(mo, whitelisted)); 
+							if (_logToAdKats) 
+								LogViolation(speaker, message, match);
 							WriteLog(String.Format("LanguageEnforcer: Player {0} triggered the word {1}", speaker, match));
 						}
 						else
 						{
 							WriteLog("LanguageEnforcer: Error while trying to determine match");
+							if (_logToAdKats) 
+								LogViolation(speaker, message, "Unknown");
 							TakeMeasure(speaker, message, WhitelistOverride(mo, whitelisted));
 						}
-
 					}
 
 					if (whitelisted)
@@ -1246,6 +1254,7 @@ namespace PRoConEvents
 		protected internal bool _useAdKatsBan;
 		protected internal bool _useAdKatsPunish;
 		protected internal bool _useAdKatsAdmins;
+		protected internal bool _logToAdKats;
 		protected bool _usePbGuid;
 		protected uint _killDelay = 1000;
 		protected uint _killOnspawnDelay = 3000;
@@ -1494,6 +1503,39 @@ namespace PRoConEvents
 		public void ConsoleWrite(string message)
 		{
 			ExecuteCommand("procon.protected.pluginconsole.write", message);
+		}
+		
+		public void Log(string player, string message)
+		{ 
+			if (!_logToAdKats) 
+				return;
+			ThreadPool.QueueUserWorkItem(callback =>
+			{
+				try
+				{
+					Thread.Sleep(500);
+					var requestHashtable = new Hashtable {
+						{"caller_identity", GetType().Name},
+						{"response_requested", false},
+						{"command_type", "player_log"},
+						{"source_name", GetType().Name},
+						{"target_name", player},
+						{"record_message", message}
+					};
+					if (Guids.ContainsKey(player))
+						requestHashtable.Add("target_guid", Guids[player]);
+					ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
+				}
+				catch (Exception exc)
+				{
+					WriteLog(exc.ToString());
+				}
+			}, null);
+		}
+
+		public void LogViolation(String player, String message, String match) 
+		{
+			Log(player, $"Language Violation: Word: {match} Message: {message}");
 		}
 
 		public void Say(string message)
@@ -2044,6 +2086,7 @@ blockquote > h4{line-height: 1.5;}
 	<blockquote><span class=""settings-header"">Log to</span><span class=""category-label"">Category 2</span><br/> Specifies where the Plugin should deposit a summary of its actions. The Plugin will also try to log to the LangEnforcer.log file in the plugin folder.</blockquote>
 	<blockquote><span class=""settings-header"">Use AdKats punishment</span><span class=""category-label"">Category 2</span><br/> Tell AdKats to punish a player instead of using the successive measures. This will set ""Use AdKats to issue Kills and bans"" to Yes and the ""Allow higher measures"" settings of the overrides to false.</blockquote>
 	<blockquote><span class=""settings-header"">Use AdKats to issue Kills and bans</span><span class=""category-label"">Category 2</span><br/> Send Kills, Kicks and Bans to AdKats instead of issuing them within the LanguageEnforcer.</blockquote>
+	<blockquote><span class=""settings-header"">Log violations to AdKats</span><span class=""category-label"">Category 2</span><br/> Log language violations to AdKats. (content of messages)</blockquote>
 	<blockquote><span class=""settings-header"">Get Admins from textfile</span><span class=""category-label"">Category 2</span><br/> Admins are determined by the <b>le_admins.txt</b> textfile.</blockquote>
 	<blockquote><span class=""settings-header"">Section severity</span><span class=""category-label"">Category 6</span><br/> Modifies the value by which the counter will be increased</blockquote>
 	<blockquote><span class=""settings-header"">Section measure</span><span class=""category-label"">Category 6</span><br/> Overrides the automatic measure. Below it you can define if it is teated as an absolute or as a minimum.</blockquote>
@@ -2060,12 +2103,12 @@ blockquote > h4{line-height: 1.5;}
 	<blockquote><h4 id=""Category 3 - "">Repeat X times</h4> Treat this entry as X equal entries.</blockquote>
 	<blockquote><h4 id=""Category 3 - "">Custom Command</h4> Execute commands on the Procon console. (Thanks to ProconRulz)</blockquote>
 	<br/>	
+	AdKats is needed for muting players.
+	<br/><br/>	
 	<h3>Wordlists</h3>
 	<blockquote><h4 id=""Category 1 - "">Badwords</h4> The plugin will punish players when their message contains one of these words. Casing doesn't matter here. <p style=""font-size:11px; padding: 0; margin: 0;""><b>Important:</b> Please note that e.g. ""ass"" will also match ""asshole"" or ""smartass"", but it will also match the german word ""wasser"" which just means water.</p></blockquote>
 	<blockquote><h4 id=""Category 1 - "">Regex-Badwords</h4> A far more advanced but also slower way of matching badwords. A <b>simple example</b> is ""noo+b"". The plus means, that the previous letter may be typed more than once. That way the plugin also will recognize when a player writes ""noooob"". If you like the idea, googling for ""C# Regex cheat sheet"" may help you. Casing doesn't matter here either.</blockquote>
 	The plugin tries to persist the wordlists in the according .txt-files. These files are attempted to be loaded when the plugin is enabled.
-	<br/><br/>	
-	AdKats is needed for muting players.
 	<br/><br/>	
 	<h3>Measure overrides</h3>
 	The measures taken against a player can be modified based on sections in the wordlist.</br>

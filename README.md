@@ -5,7 +5,8 @@ E4GL's fork of the LanguageEnforcer plugin for Battlefield servers. Originally r
 
 ## Features
 * All features of the original LanguageEnforcer
-* Posibility to mute players by using AdKats (Killing over AdKats has to be enabled in the plugin settings)
+* Mute players by using AdKats (Killing over AdKats has to be enabled in the plugin settings)
+* Log language violations to AdKats (Message and matched word)
 
 # Credits
 Credits for the previous versions of this plugin: [SH] PacmanTRT
