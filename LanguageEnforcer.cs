@@ -1535,7 +1535,7 @@ namespace PRoConEvents
 
 		public void LogViolation(String player, String message, String match) 
 		{
-			Log(player, $"Violation - Message: {message} Match: {match}");
+			Log(player, $"Violation - Message: {message} - Match: {match}");
 		}
 
 		public void Say(string message)
