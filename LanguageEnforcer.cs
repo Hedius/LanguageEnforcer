@@ -200,10 +200,11 @@ namespace PRoConEvents
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command);
 						break;
 					case BadwordAction.PermaMute:
-						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute|Measure #{0} - Measure", dispNo), meastring);
-                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute|Measure #{0} - Public chat message", dispNo), measure.PublicMessage);
-                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute|Measure #{0} - Mute reason", dispNo), measure.PrivateMessage);
-                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute|Measure #{0} - Command", dispNo), measure.Command);
+						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
+						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
+                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
+                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
+                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
                     	break;
 					case BadwordAction.ShowRules:
 						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Measure", dispNo), meastring);
@@ -279,7 +280,10 @@ namespace PRoConEvents
 
 					if (mo.MinimumAction != BadwordAction.ShowRules && mo.MinimumAction != BadwordAction.Custom && (!_useAdKatsPunish || (_useAdKatsPunish && mo.NoAdKats && mo.MinimumAction == BadwordAction.TBan)))
 						yield return OvIntPluginVariable(String.Format("6.{0} - Measure override section '{1}'|Section '{1}' - TBan minutes", dispNo, section), mo.TBanTime);
-
+					
+					// yeah this is bad and redundancy^9000
+					if (mo.MinimumAction != BadwordAction.ShowRules && mo.MinimumAction != BadwordAction.Custom && (!_useAdKatsPunish || (_useAdKatsPunish && mo.NoAdKats && mo.MinimumAction == BadwordAction.TempMute)))
+						yield return OvIntPluginVariable(String.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Mute minutes", dispNo, section), mo.TBanTime);
 				}
 			}
 
@@ -435,6 +439,7 @@ namespace PRoConEvents
 						_measures[index].YellTime = uint.Parse(strValue);
 						return;
 					case "TBan minutes":
+					case "Mute minutes":
 						_measures[index].TBanTime = uint.Parse(strValue);
 						return;
 					case "Public chat message":
@@ -553,6 +558,7 @@ namespace PRoConEvents
 							ovr.YellTime = null;
 						return;
 					case "TBan minutes":
+					case "Mute minutes":
 						uint data2;
 						if (uint.TryParse(strValue, out data2))
 							ovr.TBanTime = data2;
