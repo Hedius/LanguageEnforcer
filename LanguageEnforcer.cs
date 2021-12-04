@@ -191,6 +191,20 @@ namespace PRoConEvents
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
 						break;
+					case BadwordAction.TempMute:
+						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Measure", dispNo, measure.Count, measure.TBanTime), meastring);
+						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage);
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Mute reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
+						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Mute minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime);
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command);
+						break;
+					case BadwordAction.PermaMute:
+						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute|Measure #{0} - Measure", dispNo), meastring);
+                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute|Measure #{0} - Public chat message", dispNo), measure.PublicMessage);
+                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute|Measure #{0} - Mute reason", dispNo), measure.PrivateMessage);
+                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute|Measure #{0} - Command", dispNo), measure.Command);
+                    	break;
 					case BadwordAction.ShowRules:
 						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Measure", dispNo), meastring);
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Command", dispNo), measure.Command);
@@ -1874,6 +1888,47 @@ namespace PRoConEvents
         		}
         	}, null);
         }
+		
+		public void PersistentMutePlayer(string player, string reason, uint minutes) {
+			// convert command numeric
+			uint command_numeric = 10518984; // default perma mute duration
+			if (minutes > 0)
+				command_numeric = minutes;
+			
+			// AdKats here?
+            if (!_useAdKatsBan && !_useAdKatsPunish) 
+            {
+                WriteLog(String.Format("LanguageEnforcer: Player {0} kicked. (Mute & AdKats not available!)", player));
+        		KickPlayer(player, reason);     
+        		return;
+            }
+            WriteLog(String.Format("LanguageEnforcer: Player {0} temp/perma muted over AdKats (Duration: {1} minutes)", player, minutes));
+            
+            // Execute command
+        	ThreadPool.QueueUserWorkItem(callback =>
+        	{
+        		try
+        		{
+        			Thread.Sleep(500);
+                    var requestHashtable = new Hashtable {
+        				{"caller_identity", GetType().Name},
+        				{"response_requested", false},
+        				{"command_type", "player_persistentmute"},
+        				{"source_name", GetType().Name},
+        				{"target_name", player},
+        				{"record_message", reason},
+                        {"command_numeric", command_numeric}
+        			};
+        			if (Guids.ContainsKey(player))
+        				requestHashtable.Add("target_guid", Guids[player]);
+        			ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
+        		}
+        		catch (Exception exc)
+        		{
+        			WriteLog(exc.ToString());
+        		}
+        	}, null);
+        }
 
 		protected internal void ProconRulzExecuteCommand(string s, int counter)
 		{
@@ -2037,11 +2092,11 @@ namespace PRoConEvents
 		}
 		public string GetPluginVersion()
 		{
-			return "1.0.4.0";
+			return "1.0.5.0";
 		}
 		public string GetPluginAuthor()
 		{
-			return "[SH] PacmanTRT, Hedius";
+			return "[SH] PacmanTRT, [E4GL] Hedius";
 		}
 
 		public string GetPluginWebsite()
@@ -2103,7 +2158,7 @@ blockquote > h4{line-height: 1.5;}
 	<blockquote><h4 id=""Category 3 - "">Repeat X times</h4> Treat this entry as X equal entries.</blockquote>
 	<blockquote><h4 id=""Category 3 - "">Custom Command</h4> Execute commands on the Procon console. (Thanks to ProconRulz)</blockquote>
 	<br/>	
-	AdKats is needed for muting players.
+	AdKats is needed for muting players. Furthermore, temp and perma muting needs E4GLAdKats.
 	<br/><br/>	
 	<h3>Wordlists</h3>
 	<blockquote><h4 id=""Category 1 - "">Badwords</h4> The plugin will punish players when their message contains one of these words. Casing doesn't matter here. <p style=""font-size:11px; padding: 0; margin: 0;""><b>Important:</b> Please note that e.g. ""ass"" will also match ""asshole"" or ""smartass"", but it will also match the german word ""wasser"" which just means water.</p></blockquote>
@@ -2272,7 +2327,7 @@ blockquote > h4{line-height: 1.5;}
 		public bool Dead;
 	}
 
-	public enum BadwordAction { ListEnd, Warn, Kill, Kick, TBan, PermBan, Mute, Custom, ShowRules }
+	public enum BadwordAction { ListEnd, Warn, Kill, Kick, TBan, PermBan, Mute, TempMute, PermaMute, Custom, ShowRules }
 
 	public class SuccessiveMeasure
 	{
@@ -2355,6 +2410,18 @@ blockquote > h4{line-height: 1.5;}
 								le.Say(ProconUtil.ProcessMessage(msg, player, showNext, 0, quote, true, le));
 						le.MutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)));
 						break;
+					case BadwordAction.TempMute:
+						if (pubMsg != null)
+							foreach (var msg in pubMsg)
+								le.Say(ProconUtil.ProcessMessage(msg, player, showNext, tbanTime, quote, true, le));
+						le.PersistentMutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, tbanTime, quote, true, le)), tbanTime);
+						break;
+					case BadwordAction.PermaMute:
+						if (pubMsg != null)
+							foreach (var msg in pubMsg)
+								le.Say(ProconUtil.ProcessMessage(msg, player, showNext, 0, quote, true, le));
+						le.PersistentMutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)), 0);
+						break;
 					case BadwordAction.ShowRules:
 						le.ShowRules(player);
 						break;
@@ -2364,7 +2431,6 @@ blockquote > h4{line-height: 1.5;}
 				}
 			if (act != BadwordAction.Custom)
 				ExecuteCommands(command, player, le);
-
 		}
 
 		private void ExecuteCommands(IEnumerable<string> command, string player, LanguageEnforcer le)
