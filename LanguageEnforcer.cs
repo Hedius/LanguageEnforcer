@@ -279,11 +279,7 @@ namespace PRoConEvents
 					}
 
 					if (mo.MinimumAction != BadwordAction.ShowRules && mo.MinimumAction != BadwordAction.Custom && (!_useAdKatsPunish || (_useAdKatsPunish && mo.NoAdKats && mo.MinimumAction == BadwordAction.TBan)))
-						yield return OvIntPluginVariable(String.Format("6.{0} - Measure override section '{1}'|Section '{1}' - TBan minutes", dispNo, section), mo.TBanTime);
-					
-					// yeah this is bad and redundancy^9000
-					if (mo.MinimumAction != BadwordAction.ShowRules && mo.MinimumAction != BadwordAction.Custom && (!_useAdKatsPunish || (_useAdKatsPunish && mo.NoAdKats && mo.MinimumAction == BadwordAction.TempMute)))
-						yield return OvIntPluginVariable(String.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Mute minutes", dispNo, section), mo.TBanTime);
+						yield return OvIntPluginVariable(String.Format("6.{0} - Measure override section '{1}'|Section '{1}' - TBan/Mute minutes", dispNo, section), mo.TBanTime);
 				}
 			}
 
@@ -440,6 +436,7 @@ namespace PRoConEvents
 						return;
 					case "TBan minutes":
 					case "Mute minutes":
+					case "TBan/Mute minutes":
 						_measures[index].TBanTime = uint.Parse(strValue);
 						return;
 					case "Public chat message":
@@ -1911,7 +1908,7 @@ namespace PRoConEvents
         		KickPlayer(player, reason);     
         		return;
             }
-            WriteLog(String.Format("LanguageEnforcer: Player {0} temp/perma muted over AdKats (Duration: {1} minutes)", player, readable));
+            WriteLog(String.Format("LanguageEnforcer: Player {0} temp/perma muted over AdKats (Duration: {1})", player, readable));
             
             // Execute command
         	ThreadPool.QueueUserWorkItem(callback =>
