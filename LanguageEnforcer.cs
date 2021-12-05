@@ -1897,10 +1897,13 @@ namespace PRoConEvents
 		
 		public void PersistentMutePlayer(string player, string reason, uint minutes) {
 			// convert command numeric
-			uint command_numeric = 10518984; // default perma mute duration
-			if (minutes > 0)
-				command_numeric = minutes;
-			
+			uint commandNumeric = 10518984; // default perma mute duration
+			string readable = "perm";
+			if (minutes > 0) {
+				commandNumeric = minutes;
+				readable = minutes + " minutes";
+			}
+
 			// AdKats here?
             if (!_useAdKatsBan && !_useAdKatsPunish) 
             {
@@ -1908,7 +1911,7 @@ namespace PRoConEvents
         		KickPlayer(player, reason);     
         		return;
             }
-            WriteLog(String.Format("LanguageEnforcer: Player {0} temp/perma muted over AdKats (Duration: {1} minutes)", player, minutes));
+            WriteLog(String.Format("LanguageEnforcer: Player {0} temp/perma muted over AdKats (Duration: {1} minutes)", player, readable));
             
             // Execute command
         	ThreadPool.QueueUserWorkItem(callback =>
@@ -1923,7 +1926,7 @@ namespace PRoConEvents
         				{"source_name", GetType().Name},
         				{"target_name", player},
         				{"record_message", reason},
-                        {"command_numeric", command_numeric}
+                        {"command_numeric", commandNumeric}
         			};
         			if (Guids.ContainsKey(player))
         				requestHashtable.Add("target_guid", Guids[player]);
