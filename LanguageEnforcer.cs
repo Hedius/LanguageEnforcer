@@ -55,7 +55,7 @@ namespace PRoConEvents
 
 		private uint _updateCounter = 5;
 		private uint _maxUpdateCounter = 6;
-		private bool _updateAvailable;
+		private bool _updateAvailable = false;
 		private bool _saveCountersAsap = true;
 
 		private static List<SuccessiveMeasure> GetDefaultMeasures()
