@@ -2130,7 +2130,7 @@ namespace PRoConEvents
 		}
 		public string GetPluginVersion()
 		{
-			return "1.0.5.0";
+			return "1.0.6.0";
 		}
 		public string GetPluginAuthor()
 		{
@@ -2164,7 +2164,7 @@ blockquote > h4{line-height: 1.5;}
 	<blockquote style=""margin: 1px 10px 1px 5px; border-left:4px solid #090; background-color: #F7F7F7;"">Everyone</blockquote>
 	
 	<blockquote style=""border-left:4px solid #900;""><h4>!langreset / !langr</h4> Resets the Player's badword history. Requires only a fragment of the Player's name. Casing does not matter.</blockquote>
-	<blockquote style=""border-left:4px solid #900""><h4>!langpunish / !langp</h4> Manually punishes a player. Requires only a fragment of the Player's name. Casing does not matter.</blockquote>
+	<blockquote style=""border-left:4px solid #900""><h4>!langpunish / !langp</h4> THIS COMMAND HAS BEEN REMOVED. INSTEAD USE E4GLAdKats to let admins issue this command over AdKats.</blockquote>
 	<blockquote style=""border-left:4px solid #900""><h4>!langcounter / !langc</h4> Gets or sets the counter for a player. If provided with only a name it will tell you the according counter. If you provide an additional number (same formatting as the cooldown: 0.00) you can set the counter without the need to reset/punish a player</blockquote>
 	<blockquote style=""border-left:4px solid #090""><h4>!langinfo</h4> Tells the Player some basics about this plugin.</blockquote>
 	<h3>Extended Functions</h3>
