@@ -205,7 +205,24 @@ namespace PRoConEvents
                     	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
                     	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
                     	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
-                    	break;
+						break;
+					// Hedius: Well... this is fully redundant, but I am too lazy to fix the code of other persons. So i gotta make it worse. Shame on me...
+					// actually switching the text field value would be nicer... not gonna do it... works like that...
+					case BadwordAction.TempForceMute:
+						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Measure", dispNo, measure.Count, measure.TBanTime), meastring); 
+						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count); 
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage); 
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Mute reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
+						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Temp Fore Mute{2} x{1}|Measure #{0} - Mute minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime); 
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command); 
+						break;
+					case BadwordAction.PermaForceMute:
+						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
+						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count); 
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage); 
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage); 
+						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command); 
+						break;
 					case BadwordAction.ShowRules:
 						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Measure", dispNo), meastring);
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Command", dispNo), measure.Command);
@@ -1892,7 +1909,7 @@ namespace PRoConEvents
         	}, null);
         }
 		
-		public void PersistentMutePlayer(string player, string reason, uint minutes) {
+		public void PersistentMutePlayer(string player, string reason, uint minutes, bool force) {
 			// convert command numeric
 			uint commandNumeric = 10518984; // default perma mute duration
 			string readable = "perm";
@@ -1901,6 +1918,8 @@ namespace PRoConEvents
 				readable = minutes + " minutes";
 			}
 
+			string commandKey = force ? "player_peristentmute_force" : "player_persistentmute";
+
 			// AdKats here?
             if (!_useAdKatsBan && !_useAdKatsPunish) 
             {
@@ -1908,7 +1927,8 @@ namespace PRoConEvents
         		KickPlayer(player, reason);     
         		return;
             }
-            WriteLog(String.Format("LanguageEnforcer: Player {0} temp/perma muted over AdKats (Duration: {1})", player, readable));
+            WriteLog(String.Format("LanguageEnforcer: Player {0} temp/perma {1}muted over AdKats (Duration: {2})",
+	            player, force ? "force " : "", readable));
             
             // Execute command
         	ThreadPool.QueueUserWorkItem(callback =>
@@ -1919,7 +1939,7 @@ namespace PRoConEvents
                     var requestHashtable = new Hashtable {
         				{"caller_identity", GetType().Name},
         				{"response_requested", false},
-        				{"command_type", "player_persistentmute"},
+                        {"command_type", commandKey},
         				{"source_name", GetType().Name},
         				{"target_name", player},
         				{"record_message", reason},
@@ -2333,7 +2353,7 @@ blockquote > h4{line-height: 1.5;}
 		public bool Dead;
 	}
 
-	public enum BadwordAction { ListEnd, Warn, Kill, Kick, TBan, PermBan, Mute, TempMute, PermaMute, Custom, ShowRules }
+	public enum BadwordAction { ListEnd, Warn, Kill, Kick, TBan, PermBan, Mute, TempMute, PermaMute, TempForceMute, PermaForceMute, Custom, ShowRules }
 
 	public class SuccessiveMeasure
 	{
@@ -2417,16 +2437,18 @@ blockquote > h4{line-height: 1.5;}
 						le.MutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)));
 						break;
 					case BadwordAction.TempMute:
+					case BadwordAction.TempForceMute:
 						if (pubMsg != null)
 							foreach (var msg in pubMsg)
 								le.Say(ProconUtil.ProcessMessage(msg, player, showNext, tbanTime, quote, true, le));
-						le.PersistentMutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, tbanTime, quote, true, le)), tbanTime);
+						le.PersistentMutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, tbanTime, quote, true, le)), tbanTime, act == BadwordAction.TempForceMute);
 						break;
 					case BadwordAction.PermaMute:
+					case BadwordAction.PermaForceMute:
 						if (pubMsg != null)
 							foreach (var msg in pubMsg)
 								le.Say(ProconUtil.ProcessMessage(msg, player, showNext, 0, quote, true, le));
-						le.PersistentMutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)), 0);
+						le.PersistentMutePlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)), 0, act == BadwordAction.PermaForceMute);
 						break;
 					case BadwordAction.ShowRules:
 						le.ShowRules(player);
