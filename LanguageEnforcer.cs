@@ -981,11 +981,14 @@ namespace PRoConEvents
 					return ManuallyResetPlayer(speaker, message.Substring(idx + 1));
 				}
 
+				/*
+				 No longer needed. Adkats will issue this.
 				if (message.StartsWith("langpunish", StringComparison.OrdinalIgnoreCase) || message.StartsWith("langp ", StringComparison.OrdinalIgnoreCase))
 				{
 					var idx = message.IndexOf(' ');
 					return ManuallyPunishPlayer(speaker, message.Substring(idx + 1));
 				}
+				*/
 				if (message.StartsWith("langcounter", StringComparison.OrdinalIgnoreCase) || message.StartsWith("langc ", StringComparison.OrdinalIgnoreCase))
 				{
 					var args = message.Split(' ');
@@ -1127,6 +1130,15 @@ namespace PRoConEvents
 			TakeMeasure(player, "", MeasureOverride.NoOverride);
 			return true;
 		}
+		
+		/**
+		 * Issue a punish over from AdKats. Called by adkats.
+		 * This command will always work. The incoming name is already normalized by AdKats)
+		 */
+		private bool RemoteManuallyPunishPlayer(String name) {
+        	TakeMeasure(name, "(Triggered by Admin)", MeasureOverride.NoOverride);
+        	return true;
+        }
 
 		/// <summary>
 		/// Autocompletion for in-game commands
