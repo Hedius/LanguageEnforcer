@@ -1,4 +1,4 @@
-﻿// This code may be distributed under the terms and conditions of the GNU LGPL v3
+// This code may be distributed under the terms and conditions of the GNU LGPL v3
 // The LGPL can be read here: http://www.gnu.org/licenses/lgpl.html
 
 using System;
@@ -1135,10 +1135,9 @@ namespace PRoConEvents
 		 * Issue a punish over from AdKats. Called by adkats.
 		 * This command will always work. The incoming name is already normalized by AdKats)
 		 */
-		private bool RemoteManuallyPunishPlayer(String name) {
-        	TakeMeasure(name, "(Triggered by Admin)", MeasureOverride.NoOverride);
-        	return true;
-        }
+		private void RemoteManuallyPunishPlayer(String name) { 
+			TakeMeasure(name, "(Triggered by Admin)", MeasureOverride.NoOverride);
+		}
 
 		/// <summary>
 		/// Autocompletion for in-game commands
