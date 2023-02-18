@@ -63,17 +63,31 @@ namespace PRoConEvents {
         }
 
         public void OnPluginLoaded(string strHostName, string strPort, string strPRoConVersion) {
+            LoadFiltersFromDisk();
+
+            //by default all will be registered! so this should speed up the layer
+            RegisterEvents(GetType().Name, "OnAccountLogin", "OnListPlayers", "OnPlayerJoin", "OnPlayerKilled", "OnPlayerSpawned", "OnRoundOver", "OnPlayerLeft", "OnGlobalChat", "OnTeamChat", "OnSquadChat", "OnPluginDisable", "OnPluginEnable", "OnPunkbusterPlayerInfo");
+        }
+
+        public override void LoadFiltersFromDisk() {
             try {
-                _badwords = File.ReadAllLines(PluginFolder + "badwords.txt");
+                _badwordsCache = File.ReadAllLines(PluginFolder + "badwords.txt");
+                _badwords = CreateSections(_badwordsCache, false).ToArray();
                 RegexBadwords = File.ReadAllLines(PluginFolder + "regexbadwords.txt");
                 _startup = DateTime.Now;
+                UpdateSettingsPage();
             }
             catch {
                 WriteLog("^bLanguage Enforcer^2: Couldn't load badwords. Please make sure filesystem access is granted");
             }
+        }
 
-            //by default all will be registered! so this should speed up the layer
-            RegisterEvents(GetType().Name, "OnAccountLogin", "OnListPlayers", "OnPlayerJoin", "OnPlayerKilled", "OnPlayerSpawned", "OnRoundOver", "OnPlayerLeft", "OnGlobalChat", "OnTeamChat", "OnSquadChat", "OnPluginDisable", "OnPluginEnable", "OnPunkbusterPlayerInfo");
+        /// <summary>
+        ///     Triggers a refresh of the settings page
+        /// </summary>
+        public void UpdateSettingsPage() {
+            // from AdKats
+            ExecuteCommand("procon.protected.plugins.setVariable", "LanguageEnforcer", "UpdateSettings", "Update");
         }
 
         private static List<SuccessiveMeasure> GetDefaultMeasures() {
@@ -382,10 +396,10 @@ namespace PRoConEvents {
             TakeMeasure(player, "", MeasureOverride.NoOverride);
             return true;
         }
-        
+
         /// <summary>
-        /// Issue a punish over from AdKats. Called by adkats.
-        /// This command will always work. The incoming name is already normalized by AdKats)
+        ///     Issue a punish over from AdKats. Called by adkats.
+        ///     This command will always work. The incoming name is already normalized by AdKats)
         /// </summary>
         /// <param name="commandParams">name, guid</param>
         public void RemoteManuallyPunishPlayer(params string[] commandParams) {
@@ -397,19 +411,19 @@ namespace PRoConEvents {
         }
 
         /// <summary>
-        /// Reset the counters for a player.
+        ///     Reset the counters for a player.
         /// </summary>
         /// <param name="commandParams">name, guid</param>
         public void RemoteManuallyResetPlayer(params string[] commandParams) {
-           var name = commandParams[1];
-           // Add the guid to the guid cache if it is missing
-           var guid = commandParams[2];
-           CachePlayerInfo(name, guid); 
-           if (Players.ContainsKey(name))
-               Players.Remove(name);
-           AdminSay(string.Format("LanguageEnforcer: Player {0} now has a clean jacket", name));
+            var name = commandParams[1];
+            // Add the guid to the guid cache if it is missing
+            var guid = commandParams[2];
+            CachePlayerInfo(name, guid);
+            if (Players.ContainsKey(name))
+                Players.Remove(name);
+            AdminSay(string.Format("LanguageEnforcer: Player {0} now has a clean jacket", name));
         }
-        
+
         /// <summary>
         ///     Autocompletion for in-game commands
         /// </summary>
@@ -657,8 +671,10 @@ namespace PRoConEvents {
             yield return yesNoPluginVariable("4 - Excluded Players|Warn Whitelisted", _warnWhitelisted);
             yield return yesNoPluginVariable("4 - Excluded Players|Ignore squad chat", _ignoreSquadChat);
 
-            yield return sArrayPluginVariable("1 - Wordlists|Badwords", _badwordsCache);
-            yield return sArrayPluginVariable("1 - Wordlists|Regex Badwords", RegexBadwords);
+            if (!getAll) {
+                yield return sArrayPluginVariable("1 - Wordlists|Badwords", _badwordsCache);
+                yield return sArrayPluginVariable("1 - Wordlists|Regex Badwords", RegexBadwords);
+            }
 
             yield return stringPluginVariable("5 - Messages|Latent kill message", _resLatentKill);
             yield return stringPluginVariable("5 - Messages|Counter reset message", _resCounterReset);
@@ -955,7 +971,8 @@ namespace PRoConEvents {
             CheckForWordlistDuplicates();
 
             try {
-                File.WriteAllLines(PluginFolder + (isRegex ? "regexbadwords.txt" : "badwords.txt"), words);
+                // Do not save the badwords... we manage them over puppet
+                // File.WriteAllLines(PluginFolder + (isRegex ? "regexbadwords.txt" : "badwords.txt"), words);
             }
             catch {
                 WriteLog("^bLanguage Enforcer^2: Couldn't save badwords. Please make sure filesystem access is granted");
@@ -1631,10 +1648,13 @@ namespace PRoConEvents {
             ConsoleWrite("^bLanguage Enforcer ^2Enabled!");
             WriteLog("Language Enforcer: Using folder \"" + PluginFolder + "\" for File operations");
             Enabled = true;
+            LoadFiltersFromDisk();
             RunUpdateTask = LookForUpdates;
             if (SaveCounters)
                 LoadCounters();
         }
+
+        public abstract void LoadFiltersFromDisk();
 
         public string GetPluginName() {
             return "LanguageEnforcer for E4GLAdKats";
