@@ -353,7 +353,7 @@ namespace PRoConEvents {
         }
 
         internal void ShowRules(string target) {
-            // TODO ISSUE ADKATS RULES COMMAND
+            ExecuteAdKatsCommand("self_rules", target, "Telling Player Rules");
         }
 
         private bool ManuallyResetPlayer(string speaker, string player) {
@@ -1648,6 +1648,7 @@ h3{color:#920000; border-bottom:1px solid #ECECEB;}
 blockquote > h4{line-height: 1.5;}
 .table-head{font-weight: bold; white-space: nowrap}
 </style>
+<h2>THIS VERSION REQUIRES THE USAGE OF E4GL AdKats!</h2>
 
 <h2>Description</h2>
 	<p>This plugin will watch your server's ingame-chat for badwords and does a few other things which can be disabled. 
