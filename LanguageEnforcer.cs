@@ -382,11 +382,12 @@ namespace PRoConEvents {
             TakeMeasure(player, "", MeasureOverride.NoOverride);
             return true;
         }
-
-        /**
-         * Issue a punish over from AdKats. Called by adkats.
-         * This command will always work. The incoming name is already normalized by AdKats)
-         */
+        
+        /// <summary>
+        /// Issue a punish over from AdKats. Called by adkats.
+        /// This command will always work. The incoming name is already normalized by AdKats)
+        /// </summary>
+        /// <param name="commandParams">name, guid</param>
         public void RemoteManuallyPunishPlayer(params string[] commandParams) {
             var name = commandParams[1];
             // Add the guid to the guid cache if it is missing
@@ -395,6 +396,20 @@ namespace PRoConEvents {
             TakeMeasure(name, "(Triggered by Admin)", MeasureOverride.NoOverride);
         }
 
+        /// <summary>
+        /// Reset the counters for a player.
+        /// </summary>
+        /// <param name="commandParams">name, guid</param>
+        public void RemoteManuallyResetPlayer(params string[] commandParams) {
+           var name = commandParams[1];
+           // Add the guid to the guid cache if it is missing
+           var guid = commandParams[2];
+           CachePlayerInfo(name, guid); 
+           if (Players.ContainsKey(name))
+               Players.Remove(name);
+           AdminSay(string.Format("LanguageEnforcer: Player {0} now has a clean jacket", name));
+        }
+        
         /// <summary>
         ///     Autocompletion for in-game commands
         /// </summary>

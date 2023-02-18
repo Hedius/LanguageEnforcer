@@ -14,7 +14,7 @@ THIS PLUGIN REQUIRES YOU TO USE E4GLAdKats.
 * Temp/Perma mute support if you use the [E4GL version of AdKats](https://github.com/Hedius/E4GLAdKats).
 * Support for force muting.
 * Log language violations to AdKats (Message and matched word)
-* Features for issuing remote punishes from other plugins.
+* Features for issuing remote punishes and counter resets from other plugins.
 
 # Credits
 Credits for the previous versions of this plugin: [SH] PacmanTRT
