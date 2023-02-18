@@ -551,11 +551,8 @@ namespace PRoConEvents {
             if (SaveCounters)
                 yield return yesNoPluginVariable("2 - General|Save counters on every punish", _saveCountersAsap);
 
-            yield return yesNoPluginVariable("2 - General|Let AdKats determine who is an admin", UseAdKatsAdmins);
             yield return yesNoPluginVariable("2 - General|Log violations to AdKats", LogToAdKats);
             yield return yesNoPluginVariable("2 - General|Use AdKats punishment", UseAdKatsPunish);
-            if (!UseAdKatsAdmins)
-                yield return yesNoPluginVariable("2 - General|Get Admins from textfile", GetAdminsFromDisk);
             yield return yesNoPluginVariable("2 - General|Look for Updates", LookForUpdates);
             if (LookForUpdates || getAll)
                 yield return unIntPluginVariable("2 - General|Look for Updates every X hours", _maxUpdateCounter);
@@ -736,19 +733,12 @@ namespace PRoConEvents {
                 case "Kill delay on spawn (ms)":
                     KillOnspawnDelay = uint.Parse(strValue);
                     return;
-                case "Let AdKats determine who is an admin":
-                    UseAdKatsAdmins = strValue == yes;
-                    return;
                 case "Log violations to AdKats":
                     LogToAdKats = strValue == yes;
                     return;
                 case "Use AdKats punishment":
                     UseAdKatsPunish = strValue == yes;
                     return;
-                case "Get Admins from textfile":
-                    GetAdminsFromDisk = strValue == yes;
-                    return;
-
                 case "Look for Updates":
                     LookForUpdates = strValue == yes;
                     return;
@@ -1063,12 +1053,10 @@ namespace PRoConEvents {
         protected internal bool LogToAdKats;
         protected bool LookForUpdates = true;
         private bool _updateTaskIsRunning;
-        protected internal bool UseAdKatsAdmins;
 
         protected internal bool UseAdKatsPunish;
         private string[] _admins;
         protected internal Dictionary<string, string> Countries = new Dictionary<string, string>(); //name to countrycode dict for country specific messages
-        public bool GetAdminsFromDisk;
         protected internal Dictionary<string, string> Guids = new Dictionary<string, string>(); //name to guid dict for banning via guid
         protected LoggingTarget LogTarget = LoggingTarget.PluginConsole;
 
@@ -1220,14 +1208,7 @@ namespace PRoConEvents {
                 players.ForEach(CachePlayerInfo);
                 OnlinePlayerCount = players.Count;
 
-                if (UseAdKatsAdmins) {
-                    RefreshAdKatsAdmins();
-                }
-                else {
-                    Admins.Clear();
-                    foreach (var admin in players.Where(p => IsAdmin(p.SoldierName)).Select(p => p.SoldierName))
-                        Admins.Add(admin);
-                }
+                RefreshAdKatsAdmins();
 
                 if (OnlinePlayerCount <= 0) {
                     Cleanup();
@@ -1250,25 +1231,7 @@ namespace PRoConEvents {
             if (Admins.Contains(player))
                 return true;
 
-            if (UseAdKatsAdmins) {
-                RefreshAdKatsAdmins();
-                return false;
-            }
-
-            try {
-                if (GetAdminsFromDisk) {
-                    if (_admins == null)
-                        _admins = File.ReadAllLines(PluginFolder + "le_admins.txt");
-                    return _admins.Any(a => a.Equals(player, StringComparison.OrdinalIgnoreCase));
-                }
-
-                var p = GetAccountPrivileges(player);
-                if (p != null && p.CanKillPlayers)
-                    return true;
-            }
-            catch {
-            }
-
+            RefreshAdKatsAdmins();
             return false;
         }
 
