@@ -1746,23 +1746,16 @@ blockquote > h4{line-height: 1.5;}
 	<blockquote style=""border-left:4px solid #900""><h4>!langpunish / !langp</h4> THIS COMMAND HAS BEEN REMOVED. INSTEAD USE E4GLAdKats to let admins issue this command over AdKats.</blockquote>
 	<blockquote style=""border-left:4px solid #900""><h4>!langcounter / !langc</h4> Gets or sets the counter for a player. If provided with only a name it will tell you the according counter. If you provide an additional number (same formatting as the cooldown: 0.00) you can set the counter without the need to reset/punish a player</blockquote>
 	<blockquote style=""border-left:4px solid #090""><h4>!langinfo</h4> Tells the Player some basics about this plugin.</blockquote>
-	<h3>Extended Functions</h3>
-	<blockquote style=""border-left:4px solid #090""><h4>!admin</h4> Lists online players with admin rights.</blockquote>
-	<blockquote style=""border-left:4px solid #090""><h4>!rules / !help</h4> Displays a configurable helptext.</blockquote>
 <br/>
 <h2>Settings</h2>
 	<blockquote><span class=""settings-header"">Cooldown steps per day</span><span class=""category-label"">Category 2</span><br/> Configures the cooldown. That way a player that curses occasionally will not have to be afraid of a ban. This is continuous and will <b>not</b> actually be execuded at midnight</blockquote></div>
 	<blockquote><span class=""settings-header"">Look for updates</span><span class=""category-label"">Category 2</span><br/> Will contact a server to get the current version number and display a message if enabled</blockquote>
-	<blockquote><span class=""settings-header"">Enable latent kills</span><span class=""category-label"">Category 2</span><br/> If enabled the plugin will wait for a dead player to spawn when a kill is triggered. Prevents ""HAHA! I already am dead! What now?!""-messages in a very impressive way ^^.</blockquote>
 	<blockquote><span class=""settings-header"">Load/Save counters to disk</span><span class=""category-label"">Category 2</span><br/>If enabled the plugin will write the counters to a file when the server is empty.</blockquote>
 	<blockquote><span class=""settings-header"">Log to</span><span class=""category-label"">Category 2</span><br/> Specifies where the Plugin should deposit a summary of its actions. The Plugin will also try to log to the LangEnforcer.log file in the plugin folder.</blockquote>
 	<blockquote><span class=""settings-header"">Use AdKats punishment</span><span class=""category-label"">Category 2</span><br/> Tell AdKats to punish a player instead of using the successive measures. This will set ""Use AdKats to issue Kills and bans"" to Yes and the ""Allow higher measures"" settings of the overrides to false.</blockquote>
-	<blockquote><span class=""settings-header"">Use AdKats to issue Kills and bans</span><span class=""category-label"">Category 2</span><br/> Send Kills, Kicks and Bans to AdKats instead of issuing them within the LanguageEnforcer.</blockquote>
 	<blockquote><span class=""settings-header"">Log violations to AdKats</span><span class=""category-label"">Category 2</span><br/> Log language violations to AdKats. (content of messages)</blockquote>
-	<blockquote><span class=""settings-header"">Get Admins from textfile</span><span class=""category-label"">Category 2</span><br/> Admins are determined by the <b>le_admins.txt</b> textfile.</blockquote>
 	<blockquote><span class=""settings-header"">Section severity</span><span class=""category-label"">Category 6</span><br/> Modifies the value by which the counter will be increased</blockquote>
 	<blockquote><span class=""settings-header"">Section measure</span><span class=""category-label"">Category 6</span><br/> Overrides the automatic measure. Below it you can define if it is teated as an absolute or as a minimum.</blockquote>
-	<blockquote><span class=""settings-header"">Enable Extended Functions</span><span class=""category-label"">Category 7</span><br/> Enables the !admin, !rules and !help commands</blockquote>
 	<blockquote><span class=""settings-header"">Manually punish Player</span><span class=""category-label"">Category 0</span><br/> works just like the ingame-command</blockquote>
 	<blockquote><span class=""settings-header"">Manually reset Player</span><span class=""category-label"">Category 0</span><br/> works just like the ingame-command</blockquote>
 	<blockquote><span class=""settings-header"">Whitelist</span><span class=""category-label"">Category 4</span><br/> Put all player names here, that should be ignored by the plugin.</blockquote>
