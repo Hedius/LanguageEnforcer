@@ -453,21 +453,6 @@ namespace PRoConEvents {
             now.TakeMeasure(this, player, now.Action != next, quote, mo);
         }
 
-        public void KillOrLatentKillPlayer(string player, string message) {
-            var requestHashtable = new Hashtable {
-                { "caller_identity", GetType().Name },
-                { "response_requested", false },
-                { "command_type", "player_kill" },
-                { "source_name", GetType().Name },
-                { "target_name", player },
-                { "record_message", message }
-            };
-            if (Guids.ContainsKey(player))
-                requestHashtable.Add("target_guid", Guids[player]);
-
-            ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-        }
-
         private SuccessiveMeasure GetMeasure(int measureIdx, out BadwordAction nextAction) {
             var current = 0;
             var count = _measures.Count;
@@ -1277,25 +1262,7 @@ namespace PRoConEvents {
         public void Log(string player, string message) {
             if (!LogToAdKats)
                 return;
-            ThreadPool.QueueUserWorkItem(callback => {
-                try {
-                    Thread.Sleep(500);
-                    var requestHashtable = new Hashtable {
-                        { "caller_identity", GetType().Name },
-                        { "response_requested", false },
-                        { "command_type", "player_log" },
-                        { "source_name", GetType().Name },
-                        { "target_name", player },
-                        { "record_message", message }
-                    };
-                    if (Guids.ContainsKey(player))
-                        requestHashtable.Add("target_guid", Guids[player]);
-                    ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-                }
-                catch (Exception exc) {
-                    WriteLog(exc.ToString());
-                }
-            }, null);
+            ExecuteAdKatsCommand("player_log", player, message);
         }
 
         public void LogViolation(string player, string message, string match) {
@@ -1435,120 +1402,28 @@ namespace PRoConEvents {
                 ExecuteCommand("procon.protected.chat.write", string.Format("(PlayerYell {0}) ", player) + message);
         }
 
-        public void KillPlayer(string player) {
-            //no default values allowed in the procon compiler -.-
-            KillPlayer(player, KillDelay);
+        public void KillPlayer(string player, string reason) {
+            ExecuteAdKatsCommand("player_kill", player, reason);
         }
-
-        public void KillPlayer(string player, uint wait) {
-            var guid = Guids.ContainsKey(player) ? Guids[player] : "unknown";
-            WriteLog(string.Format("LanguageEnforcer: Player {0} killed. GUID = {1}", player, guid));
-            ThreadPool.QueueUserWorkItem(callback => {
-                try {
-                    Thread.Sleep((int)wait);
-                    ExecuteCommand("procon.protected.send", "admin.killPlayer", player);
-                }
-                catch (Exception exc) {
-                    WriteLog(exc.ToString());
-                }
-            }, null);
-        }
-
+        
         public void KickPlayer(string player, string reason) {
-            var guid = Guids.ContainsKey(player) ? Guids[player] : "unknown";
-            WriteLog(string.Format("LanguageEnforcer: Player {0} kicked. GUID = {1}", player, guid));
-            ThreadPool.QueueUserWorkItem(callback => {
-                try {
-                    Thread.Sleep(500);
-                    var requestHashtable = new Hashtable {
-                        { "caller_identity", GetType().Name },
-                        { "response_requested", false },
-                        { "command_type", "player_kick" },
-                        { "source_name", GetType().Name },
-                        { "target_name", player },
-                        { "record_message", reason }
-                    };
-                    if (Guids.ContainsKey(player))
-                        requestHashtable.Add("target_guid", Guids[player]);
-
-                    ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-                }
-                catch (Exception exc) {
-                    WriteLog(exc.ToString());
-                }
-            }, null);
+            WriteLog(string.Format("LanguageEnforcer: Player {0} kicked.", player));
+            ExecuteAdKatsCommand("player_kick", player, reason);
         }
 
         public void TBanPlayer(string player, string reason, uint minutes) {
             WriteLog(string.Format("LanguageEnforcer: Player {0} temp banned for {1:0.##}min", player, minutes));
-            ThreadPool.QueueUserWorkItem(callback => {
-                try {
-                    Thread.Sleep(500);
-                    var requestHashtable = new Hashtable {
-                        { "caller_identity", GetType().Name },
-                        { "response_requested", false },
-                        { "command_type", "player_ban_temp" },
-                        { "source_name", GetType().Name },
-                        { "target_name", player },
-                        { "record_message", reason },
-                        { "command_numeric", minutes }
-                    };
-                    if (Guids.ContainsKey(player))
-                        requestHashtable.Add("target_guid", Guids[player]);
-
-                    ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-                }
-                catch (Exception exc) {
-                    WriteLog(exc.ToString());
-                }
-            }, null);
+            ExecuteAdKatsCommand("player_ban_temp", player, reason, minutes);
         }
 
         public void BanPlayer(string player, string reason) {
             WriteLog(string.Format("LanguageEnforcer: Player {0} permanantly banned", player));
-            ThreadPool.QueueUserWorkItem(callback => {
-                try {
-                    Thread.Sleep(500);
-                    var requestHashtable = new Hashtable {
-                        { "caller_identity", GetType().Name },
-                        { "response_requested", false },
-                        { "command_type", "player_ban_perm" },
-                        { "source_name", GetType().Name },
-                        { "target_name", player },
-                        { "record_message", reason }
-                    };
-                    if (Guids.ContainsKey(player))
-                        requestHashtable.Add("target_guid", Guids[player]);
-
-                    ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-                }
-                catch (Exception exc) {
-                    WriteLog(exc.ToString());
-                }
-            }, null);
+            ExecuteAdKatsCommand("player_ban_perm", player, reason);
         }
 
         public void MutePlayer(string player, string reason) {
             WriteLog(string.Format("LanguageEnforcer: Player {0} muted over AdKats", player));
-            ThreadPool.QueueUserWorkItem(callback => {
-                try {
-                    Thread.Sleep(500);
-                    var requestHashtable = new Hashtable {
-                        { "caller_identity", GetType().Name },
-                        { "response_requested", false },
-                        { "command_type", "player_mute" },
-                        { "source_name", GetType().Name },
-                        { "target_name", player },
-                        { "record_message", reason }
-                    };
-                    if (Guids.ContainsKey(player))
-                        requestHashtable.Add("target_guid", Guids[player]);
-                    ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-                }
-                catch (Exception exc) {
-                    WriteLog(exc.ToString());
-                }
-            }, null);
+            ExecuteAdKatsCommand("player_mute", player, reason);
         }
 
         public void PersistentMutePlayer(string player, string reason, uint minutes, bool force) {
@@ -1559,12 +1434,20 @@ namespace PRoConEvents {
                 commandNumeric = minutes;
                 readable = minutes + " minutes";
             }
-
-            var commandKey = force ? "player_peristentmute_force" : "player_persistentmute";
-
             WriteLog(string.Format("LanguageEnforcer: Player {0} temp/perma {1}muted over AdKats (Duration: {2})", player, force ? "force " : "", readable));
+            
+            var commandKey = force ? "player_peristentmute_force" : "player_persistentmute";
+            ExecuteAdKatsCommand(commandKey, player, reason, commandNumeric);
+        }
 
-            // Execute command
+        protected internal void ExecuteAdKatsCommand(string commandKey, string targetName, string reason) {
+            ExecuteAdKatsCommand(commandKey, targetName, reason, 0);
+        }
+
+        /**
+         * Execute an AdKats command on a given player.
+         */
+        protected internal void ExecuteAdKatsCommand(string commandKey, string targetName, string reason, uint commandNumeric) {
             ThreadPool.QueueUserWorkItem(callback => {
                 try {
                     Thread.Sleep(500);
@@ -1573,12 +1456,13 @@ namespace PRoConEvents {
                         { "response_requested", false },
                         { "command_type", commandKey },
                         { "source_name", GetType().Name },
-                        { "target_name", player },
+                        { "target_name", targetName },
                         { "record_message", reason },
                         { "command_numeric", commandNumeric }
                     };
-                    if (Guids.ContainsKey(player))
-                        requestHashtable.Add("target_guid", Guids[player]);
+                    // Add the target_guid if possible / cached
+                    if (Guids.ContainsKey(targetName))
+                        requestHashtable.Add("target_guid", Guids[targetName]);
                     ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
                 }
                 catch (Exception exc) {
@@ -1707,7 +1591,7 @@ namespace PRoConEvents {
         }
 
         public string GetPluginName() {
-            return "LanguageEnforcer";
+            return "LanguageEnforcer for E4GLAdKats";
         }
 
         public string GetPluginVersion() {
@@ -1974,7 +1858,7 @@ blockquote > h4{line-height: 1.5;}
             else {
                 switch (act) {
                     case BadwordAction.Kill:
-                        le.KillOrLatentKillPlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)));
+                        le.KillPlayer(player, le.GetReason(player, ProconUtil.ProcessMessages(privMsg, player, showNext, 0, quote, true, le)));
                         goto case BadwordAction.Warn; //please don't hit me
                     case BadwordAction.Warn:
                         if (pubMsg != null)
