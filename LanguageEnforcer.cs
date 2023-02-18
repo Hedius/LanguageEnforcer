@@ -172,7 +172,7 @@ namespace PRoConEvents {
             try {
                 if (Tbd.Contains(soldierName)) {
                     Tbd.Remove(soldierName);
-                    KillPlayer(soldierName, _killOnspawnDelay);
+                    KillPlayer(soldierName, KillOnspawnDelay);
                     ThreadPool.QueueUserWorkItem(callback => {
                         try {
                             Thread.Sleep(2900);
@@ -249,7 +249,7 @@ namespace PRoConEvents {
                                 mo = _overrides[section];
                         }
 
-                        if (_logToAdKats)
+                        if (LogToAdKats)
                             LogViolation(speaker, message, match);
                         TakeMeasure(speaker, message, WhitelistOverride(mo, whitelisted));
                         WriteLog(string.Format("LanguageEnforcer: Player {0} triggered the word '{1}'", speaker, match));
@@ -268,13 +268,13 @@ namespace PRoConEvents {
                             }
 
                             TakeMeasure(speaker, message, WhitelistOverride(mo, whitelisted));
-                            if (_logToAdKats)
+                            if (LogToAdKats)
                                 LogViolation(speaker, message, match);
                             WriteLog(string.Format("LanguageEnforcer: Player {0} triggered the word {1}", speaker, match));
                         }
                         else {
                             WriteLog("LanguageEnforcer: Error while trying to determine match");
-                            if (_logToAdKats)
+                            if (LogToAdKats)
                                 LogViolation(speaker, message, "Unknown");
                             TakeMeasure(speaker, message, WhitelistOverride(mo, whitelisted));
                         }
@@ -473,7 +473,7 @@ namespace PRoConEvents {
         private void TakeMeasure(string player, int measureIdx, string quote, MeasureOverride mo) {
             BadwordAction next;
             var now = GetMeasure(measureIdx, out next);
-            if (now.GetAction(mo, _useAdKatsPunish) == BadwordAction.Warn) {
+            if (now.GetAction(mo, UseAdKatsPunish) == BadwordAction.Warn) {
                 var guid = Guids.ContainsKey(player) ? Guids[player] : "unknown";
                 WriteLog(string.Format("LanguageEnforcer: Player {0} warned. GUID = {1}", player, guid));
             }
@@ -539,10 +539,10 @@ namespace PRoConEvents {
 
         public bool LookForUpdates
         {
-            get => _lookForUpdates;
+            get => base.LookForUpdates;
             set
             {
-                _lookForUpdates = value;
+                base.LookForUpdates = value;
                 RunUpdateTask = value;
             }
         }
@@ -559,35 +559,35 @@ namespace PRoConEvents {
             //type safety + needs less space
             var badActEnum = ProconUtil.CreateEnumString<BadwordAction>();
             var badActEnumNoEnd = badActEnum.Replace(BadwordAction.ListEnd + "|", "");
-            Func<string, float, CPluginVariable> FloatPluginVariable = (name, value) => new CPluginVariable(name, typeof(string), value.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat));
-            Func<string, uint, CPluginVariable> UnIntPluginVariable = (name, value) => new CPluginVariable(name, typeof(int), value);
-            Func<string, bool, CPluginVariable> YesNoPluginVariable = (name, value) => new CPluginVariable(name, typeof(enumBoolYesNo), value ? enumBoolYesNo.Yes : enumBoolYesNo.No);
-            Func<string, string, CPluginVariable> StrngPluginVariable = (name, value) => new CPluginVariable(name, typeof(string), value.SavePrepare(getAll));
-            Func<string, IEnumerable<string>, CPluginVariable> SArayPluginVariable = (name, value) => new CPluginVariable(name, typeof(string[]), value.SavePrepare(getAll));
-            Func<string, string, CPluginVariable> ActinPluginVariable = (name, value) => new CPluginVariable(name, badActEnum, value);
+            Func<string, float, CPluginVariable> floatPluginVariable = (name, value) => new CPluginVariable(name, typeof(string), value.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat));
+            Func<string, uint, CPluginVariable> unIntPluginVariable = (name, value) => new CPluginVariable(name, typeof(int), value);
+            Func<string, bool, CPluginVariable> yesNoPluginVariable = (name, value) => new CPluginVariable(name, typeof(enumBoolYesNo), value ? enumBoolYesNo.Yes : enumBoolYesNo.No);
+            Func<string, string, CPluginVariable> stringPluginVariable = (name, value) => new CPluginVariable(name, typeof(string), value.SavePrepare(getAll));
+            Func<string, IEnumerable<string>, CPluginVariable> sArrayPluginVariable = (name, value) => new CPluginVariable(name, typeof(string[]), value.SavePrepare(getAll));
+            Func<string, string, CPluginVariable> actionPluginVariable = (name, value) => new CPluginVariable(name, badActEnum, value);
 
-            Func<string, string, CPluginVariable> OvrrdPluginVariable = (name, value) => new CPluginVariable(name, badActEnumNoEnd, value);
-            Func<string, uint?, CPluginVariable> OvIntPluginVariable = (name, value) => new CPluginVariable(name, typeof(string), value == null ? "No override" : value.ToString());
+            Func<string, string, CPluginVariable> overridePluginVariable = (name, value) => new CPluginVariable(name, badActEnumNoEnd, value);
+            Func<string, uint?, CPluginVariable> ovIntPluginVariable = (name, value) => new CPluginVariable(name, typeof(string), value == null ? "No override" : value.ToString());
 
 
-            yield return FloatPluginVariable("2 - General|Cooldown steps per day", _coolDown);
-            yield return FloatPluginVariable("2 - General|Admin cooldown per day", _adminCoolDown);
+            yield return floatPluginVariable("2 - General|Cooldown steps per day", _coolDown);
+            yield return floatPluginVariable("2 - General|Admin cooldown per day", _adminCoolDown);
             yield return new CPluginVariable("2 - General|Log to", ProconUtil.CreateEnumString<LoggingTarget>(), LogTarget.ToString());
-            yield return YesNoPluginVariable("2 - General|Enable latent kills", _enableLatentKills);
-            yield return YesNoPluginVariable("2 - General|Load/Save counters to disk", SaveCounters);
-            yield return UnIntPluginVariable("2 - General|Kill delay (ms)", _killDelay);
-            yield return UnIntPluginVariable("2 - General|Kill delay on spawn (ms)", _killOnspawnDelay);
+            yield return yesNoPluginVariable("2 - General|Enable latent kills", _enableLatentKills);
+            yield return yesNoPluginVariable("2 - General|Load/Save counters to disk", SaveCounters);
+            yield return unIntPluginVariable("2 - General|Kill delay (ms)", KillDelay);
+            yield return unIntPluginVariable("2 - General|Kill delay on spawn (ms)", KillOnspawnDelay);
             if (SaveCounters)
-                yield return YesNoPluginVariable("2 - General|Save counters on every punish", _saveCountersAsap);
+                yield return yesNoPluginVariable("2 - General|Save counters on every punish", _saveCountersAsap);
 
-            yield return YesNoPluginVariable("2 - General|Let AdKats determine who is an admin", _useAdKatsAdmins);
-            yield return YesNoPluginVariable("2 - General|Log violations to AdKats", _logToAdKats);
-            yield return YesNoPluginVariable("2 - General|Use AdKats punishment", _useAdKatsPunish);
-            if (!_useAdKatsAdmins)
-                yield return YesNoPluginVariable("2 - General|Get Admins from textfile", GetAdminsFromDisk);
-            yield return YesNoPluginVariable("2 - General|Look for Updates", LookForUpdates);
+            yield return yesNoPluginVariable("2 - General|Let AdKats determine who is an admin", UseAdKatsAdmins);
+            yield return yesNoPluginVariable("2 - General|Log violations to AdKats", LogToAdKats);
+            yield return yesNoPluginVariable("2 - General|Use AdKats punishment", UseAdKatsPunish);
+            if (!UseAdKatsAdmins)
+                yield return yesNoPluginVariable("2 - General|Get Admins from textfile", GetAdminsFromDisk);
+            yield return yesNoPluginVariable("2 - General|Look for Updates", LookForUpdates);
             if (LookForUpdates || getAll)
-                yield return UnIntPluginVariable("2 - General|Look for Updates every X hours", _maxUpdateCounter);
+                yield return unIntPluginVariable("2 - General|Look for Updates every X hours", _maxUpdateCounter);
 
 
             for (var i = 0; i < _measures.Count; i++) {
@@ -596,138 +596,138 @@ namespace PRoConEvents {
                 var dispNo = i + 1;
                 switch (measure.Action) {
                     case BadwordAction.Warn:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Measure", dispNo, meastring, measure.Count), meastring);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Repeat X times", dispNo, meastring, measure.Count), measure.Count);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Public chat message", dispNo, meastring, measure.Count), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Private chat message", dispNo, meastring, measure.Count), measure.PrivateMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Yell message", dispNo, meastring, measure.Count), measure.YellMessage);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Yell time (sec.)", dispNo, meastring, measure.Count), measure.YellTime);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Command", dispNo, meastring, measure.Count), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Measure", dispNo, meastring, measure.Count), meastring);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Repeat X times", dispNo, meastring, measure.Count), measure.Count);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Public chat message", dispNo, meastring, measure.Count), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Private chat message", dispNo, meastring, measure.Count), measure.PrivateMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Yell message", dispNo, meastring, measure.Count), measure.YellMessage);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Yell time (sec.)", dispNo, meastring, measure.Count), measure.YellTime);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - {1} x{2}|Measure #{0} - Command", dispNo, meastring, measure.Count), measure.Command);
                         break;
                     case BadwordAction.Kill:
                         goto case BadwordAction.Warn;
                     case BadwordAction.Kick:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count), measure.Count);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Kick reason", dispNo, measure.Count), measure.PrivateMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count), measure.Count);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Kick reason", dispNo, measure.Count), measure.PrivateMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Kick x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
                         break;
                     case BadwordAction.TBan:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - Measure", dispNo, measure.Count, measure.TBanTime), meastring);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - TBan reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - TBan minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - Measure", dispNo, measure.Count, measure.TBanTime), meastring);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - TBan reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - TBan minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - TBan{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command);
                         break;
                     case BadwordAction.PermBan:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Measure", dispNo), meastring);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Public chat message", dispNo), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Ban reason", dispNo), measure.PrivateMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Command", dispNo), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Measure", dispNo), meastring);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Public chat message", dispNo), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Ban reason", dispNo), measure.PrivateMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Ban|Measure #{0} - Command", dispNo), measure.Command);
                         break;
                     case BadwordAction.Mute:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count), measure.Count);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count), measure.Count);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
                         break;
                     case BadwordAction.TempMute:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Measure", dispNo, measure.Count, measure.TBanTime), meastring);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Mute reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Mute minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Measure", dispNo, measure.Count, measure.TBanTime), meastring);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Mute reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Mute minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Mute{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command);
                         break;
                     case BadwordAction.PermaMute:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
                         break;
                     // Hedius: Well... this is fully redundant, but I am too lazy to fix the code of other persons. So i gotta make it worse. Shame on me...
                     // actually switching the text field value would be nicer... not gonna do it... works like that...
                     case BadwordAction.TempForceMute:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Measure", dispNo, measure.Count, measure.TBanTime), meastring);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Mute reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Mute minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Measure", dispNo, measure.Count, measure.TBanTime), meastring);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Mute reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Mute minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command);
                         break;
                     case BadwordAction.PermaForceMute:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
-                        yield return UnIntPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
+                        yield return unIntPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Permanent Force Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
                         break;
                     case BadwordAction.ShowRules:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Measure", dispNo), meastring);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Command", dispNo), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Measure", dispNo), meastring);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Show Rules|Measure #{0} - Command", dispNo), measure.Command);
                         break;
                     case BadwordAction.Custom:
-                        yield return ActinPluginVariable(string.Format("3.{0} - Measure {0} - Custom Command|Measure #{0} - Measure", dispNo), meastring);
-                        yield return SArayPluginVariable(string.Format("3.{0} - Measure {0} - Custom Command|Measure #{0} - Command", dispNo), measure.Command);
+                        yield return actionPluginVariable(string.Format("3.{0} - Measure {0} - Custom Command|Measure #{0} - Measure", dispNo), meastring);
+                        yield return sArrayPluginVariable(string.Format("3.{0} - Measure {0} - Custom Command|Measure #{0} - Command", dispNo), measure.Command);
                         break;
                 }
 
                 if (measure.Action == BadwordAction.ListEnd) {
-                    yield return ActinPluginVariable(string.Format("3.{0} - Measure List End|Measure #{0} - Measure", dispNo), meastring);
+                    yield return actionPluginVariable(string.Format("3.{0} - Measure List End|Measure #{0} - Measure", dispNo), meastring);
                     break; //end the for-loop (not possible inside switch)
                 }
             }
 
-            yield return SArayPluginVariable("4 - Excluded Players|Whitelist", _whitelist);
-            yield return YesNoPluginVariable("4 - Excluded Players|Treat Admins as Whitelisted", _whitelistAdmins);
-            yield return YesNoPluginVariable("4 - Excluded Players|Disallow player self reset", _disallowPlayerSelfReset);
-            yield return YesNoPluginVariable("4 - Excluded Players|Warn Whitelisted", _warnWhitelisted);
-            yield return YesNoPluginVariable("4 - Excluded Players|Ignore squad chat", _ignoreSquadChat);
+            yield return sArrayPluginVariable("4 - Excluded Players|Whitelist", _whitelist);
+            yield return yesNoPluginVariable("4 - Excluded Players|Treat Admins as Whitelisted", _whitelistAdmins);
+            yield return yesNoPluginVariable("4 - Excluded Players|Disallow player self reset", _disallowPlayerSelfReset);
+            yield return yesNoPluginVariable("4 - Excluded Players|Warn Whitelisted", _warnWhitelisted);
+            yield return yesNoPluginVariable("4 - Excluded Players|Ignore squad chat", _ignoreSquadChat);
 
-            yield return SArayPluginVariable("1 - Wordlists|Badwords", _badwordsCache);
-            yield return SArayPluginVariable("1 - Wordlists|Regex Badwords", RegexBadwords);
+            yield return sArrayPluginVariable("1 - Wordlists|Badwords", _badwordsCache);
+            yield return sArrayPluginVariable("1 - Wordlists|Regex Badwords", RegexBadwords);
 
-            yield return StrngPluginVariable("5 - Messages|Latent kill message", _resLatentKill);
-            yield return StrngPluginVariable("5 - Messages|Counter reset message", _resCounterReset);
-            yield return SArayPluginVariable("5 - Messages|!langinfo message", _resLangInfo);
+            yield return stringPluginVariable("5 - Messages|Latent kill message", _resLatentKill);
+            yield return stringPluginVariable("5 - Messages|Counter reset message", _resCounterReset);
+            yield return sArrayPluginVariable("5 - Messages|!langinfo message", _resLangInfo);
 
             var sections = _badwordSection.Values.Concat(_regexBadwordSection.Values).Distinct().ToArray();
             for (var index = 0; index < sections.Length; index++) {
                 var dispNo = index + 1;
                 var section = sections[index];
                 var enabled = _overrides.ContainsKey(section);
-                yield return YesNoPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Enabled", dispNo, section), enabled);
+                yield return yesNoPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Enabled", dispNo, section), enabled);
                 if (enabled) {
                     var mo = _overrides[section];
-                    if (_useAdKatsPunish) {
-                        yield return YesNoPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Use AdKats punish", dispNo, section), !mo.NoAdKats);
+                    if (UseAdKatsPunish) {
+                        yield return yesNoPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Use AdKats punish", dispNo, section), !mo.NoAdKats);
                     }
                     else {
-                        yield return FloatPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Severity", dispNo, section), mo.Severity);
-                        yield return YesNoPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Allow higher measures", dispNo, section), !mo.AlwaysUseMinAction);
-                        yield return FloatPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Minimum counter afterwards", dispNo, section), mo.MinimumCounter + 1);
+                        yield return floatPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Severity", dispNo, section), mo.Severity);
+                        yield return yesNoPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Allow higher measures", dispNo, section), !mo.AlwaysUseMinAction);
+                        yield return floatPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Minimum counter afterwards", dispNo, section), mo.MinimumCounter + 1);
                     }
 
-                    if (!_useAdKatsPunish || (_useAdKatsPunish && mo.NoAdKats)) {
-                        yield return OvrrdPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Measure", dispNo, section), mo.MinimumAction.ToString());
+                    if (!UseAdKatsPunish || (UseAdKatsPunish && mo.NoAdKats)) {
+                        yield return overridePluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Measure", dispNo, section), mo.MinimumAction.ToString());
                         if (mo.MinimumAction != BadwordAction.ShowRules && mo.MinimumAction != BadwordAction.Custom) {
-                            yield return SArayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Public message", dispNo, section), mo.PublicMessage);
-                            yield return SArayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Private message", dispNo, section), mo.PrivateMessage);
-                            yield return SArayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Yell message", dispNo, section), mo.YellMessage);
-                            yield return OvIntPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Yell time (sec.)", dispNo, section), mo.YellTime);
-                            yield return SArayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Command", dispNo, section), mo.Command);
+                            yield return sArrayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Public message", dispNo, section), mo.PublicMessage);
+                            yield return sArrayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Private message", dispNo, section), mo.PrivateMessage);
+                            yield return sArrayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Yell message", dispNo, section), mo.YellMessage);
+                            yield return ovIntPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Yell time (sec.)", dispNo, section), mo.YellTime);
+                            yield return sArrayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Command", dispNo, section), mo.Command);
                         }
                     }
                     else {
-                        yield return SArayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Public message", dispNo, section), mo.PublicMessage);
+                        yield return sArrayPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - Public message", dispNo, section), mo.PublicMessage);
                     }
 
-                    if (mo.MinimumAction != BadwordAction.ShowRules && mo.MinimumAction != BadwordAction.Custom && (!_useAdKatsPunish || (_useAdKatsPunish && mo.NoAdKats && mo.MinimumAction == BadwordAction.TBan)))
-                        yield return OvIntPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - TBan/Mute minutes", dispNo, section), mo.TBanTime);
+                    if (mo.MinimumAction != BadwordAction.ShowRules && mo.MinimumAction != BadwordAction.Custom && (!UseAdKatsPunish || (UseAdKatsPunish && mo.NoAdKats && mo.MinimumAction == BadwordAction.TBan)))
+                        yield return ovIntPluginVariable(string.Format("6.{0} - Measure override section '{1}'|Section '{1}' - TBan/Mute minutes", dispNo, section), mo.TBanTime);
                 }
             }
 
@@ -763,19 +763,19 @@ namespace PRoConEvents {
                     _saveCountersAsap = strValue == yes;
                     return;
                 case "Kill delay (ms)":
-                    _killDelay = uint.Parse(strValue);
+                    KillDelay = uint.Parse(strValue);
                     return;
                 case "Kill delay on spawn (ms)":
-                    _killOnspawnDelay = uint.Parse(strValue);
+                    KillOnspawnDelay = uint.Parse(strValue);
                     return;
                 case "Let AdKats determine who is an admin":
-                    _useAdKatsAdmins = strValue == yes;
+                    UseAdKatsAdmins = strValue == yes;
                     return;
                 case "Log violations to AdKats":
-                    _logToAdKats = strValue == yes;
+                    LogToAdKats = strValue == yes;
                     return;
                 case "Use AdKats punishment":
-                    _useAdKatsPunish = strValue == yes;
+                    UseAdKatsPunish = strValue == yes;
                     return;
                 case "Get Admins from textfile":
                     GetAdminsFromDisk = strValue == yes;
@@ -1091,15 +1091,15 @@ namespace PRoConEvents {
         private static string _folder; //folder target cache
         protected readonly HashSet<string> Admins = new HashSet<string>(); //online admins for AdminSay() and !admin / HashSet is faster with Contains
         protected readonly HashSet<string> Tbd = new HashSet<string>(); //list of players who cursed while dead / HashSet doesn't allow duplicates, but we don't want to annoy them too much
-        protected uint _killDelay = 1000;
-        protected uint _killOnspawnDelay = 3000;
-        protected internal bool _logToAdKats;
-        protected bool _lookForUpdates = true;
+        protected uint KillDelay = 1000;
+        protected uint KillOnspawnDelay = 3000;
+        protected internal bool LogToAdKats;
+        protected bool LookForUpdates = true;
         private bool _updateTaskIsRunning;
-        protected internal bool _useAdKatsAdmins;
+        protected internal bool UseAdKatsAdmins;
 
-        protected internal bool _useAdKatsPunish;
-        private string[] admins;
+        protected internal bool UseAdKatsPunish;
+        private string[] _admins;
         protected internal Dictionary<string, string> Countries = new Dictionary<string, string>(); //name to countrycode dict for country specific messages
         public bool GetAdminsFromDisk;
         protected internal Dictionary<string, string> Guids = new Dictionary<string, string>(); //name to guid dict for banning via guid
@@ -1255,7 +1255,7 @@ namespace PRoConEvents {
                 players.ForEach(CachePlayerInfo);
                 OnlinePlayerCount = players.Count;
 
-                if (_useAdKatsAdmins) {
+                if (UseAdKatsAdmins) {
                     RefreshAdKatsAdmins();
                 }
                 else {
@@ -1288,16 +1288,16 @@ namespace PRoConEvents {
             if (Admins.Contains(player))
                 return true;
 
-            if (_useAdKatsAdmins) {
+            if (UseAdKatsAdmins) {
                 RefreshAdKatsAdmins();
                 return false;
             }
 
             try {
                 if (GetAdminsFromDisk) {
-                    if (admins == null)
-                        admins = File.ReadAllLines(PluginFolder + "le_admins.txt");
-                    return admins.Any(a => a.Equals(player, StringComparison.OrdinalIgnoreCase));
+                    if (_admins == null)
+                        _admins = File.ReadAllLines(PluginFolder + "le_admins.txt");
+                    return _admins.Any(a => a.Equals(player, StringComparison.OrdinalIgnoreCase));
                 }
 
                 var p = GetAccountPrivileges(player);
@@ -1350,7 +1350,7 @@ namespace PRoConEvents {
         }
 
         public void Log(string player, string message) {
-            if (!_logToAdKats)
+            if (!LogToAdKats)
                 return;
             ThreadPool.QueueUserWorkItem(callback => {
                 try {
@@ -1512,7 +1512,7 @@ namespace PRoConEvents {
 
         public void KillPlayer(string player) {
             //no default values allowed in the procon compiler -.-
-            KillPlayer(player, _killDelay);
+            KillPlayer(player, KillDelay);
         }
 
         public void KillPlayer(string player, uint wait) {
@@ -1682,31 +1682,31 @@ namespace PRoConEvents {
             // and the action message
             // Note that we delay the %% substitutions until we have 'split' 
             // the message in case we have spaces in subst values
-            var parms_list = new List<string>();
+            var parmsList = new List<string>();
             // v39b.1 modification - Use command directly if it begins 'procon.'
             if (!s.ToLower().StartsWith("procon."))
-                parms_list.Add("procon.protected.send");
+                parmsList.Add("procon.protected.send");
             // if this is a punkbuster command then concatenate pb command into a single string
             // e.g. pb_sv_getss "bambam"
             if (s.ToLower().StartsWith("punkbuster.pb_sv_command")) {
-                parms_list.Add("punkBuster.pb_sv_command");
-                parms_list.Add(s.Substring(25).TrimStart());
+                parmsList.Add("punkBuster.pb_sv_command");
+                parmsList.Add(s.Substring(25).TrimStart());
             }
             else // for non-punkbuster commands each param is its own string...
             {
-                parms_list.AddRange(quoted_split(s));
+                parmsList.AddRange(quoted_split(s));
             }
 
-            ExecuteCommand(parms_list.ToArray());
+            ExecuteCommand(parmsList.ToArray());
 
-            ConsoleWrite(string.Format("LanguageEnforcer: Executed command [{0}]", string.Join(",", parms_list.ToArray())));
+            ConsoleWrite(string.Format("LanguageEnforcer: Executed command [{0}]", string.Join(",", parmsList.ToArray())));
         }
 
         // split a string into elements separated by spaces, binding quoted strings into one element
         // e.g. Exec vars.serverName "OFc Server - no nubs" will be parsed to [vars.serverName,"OFc Server - no nubs"]
         private IEnumerable<string> quoted_split(string str) {
-            string quoted_str = null; // var to accumulate full string, quoted or not
-            char? quote_char = null; // ? makes char accept nulls --  null or opennig quote char of current quoted string
+            string quotedStr = null; // var to accumulate full string, quoted or not
+            char? quoteChar = null; // ? makes char accept nulls --  null or opennig quote char of current quoted string
             // quote_char != null used as flag to confirm we are mid-quoted-string
 
             var result = new List<string>();
@@ -1716,31 +1716,31 @@ namespace PRoConEvents {
 
             foreach (var s in str.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)) {
                 if (s.StartsWith("\"") || s.StartsWith("\'")) // start of quoted string - allow matching " or'
-                    quote_char = s[0];
-                if (quote_char == null) // NOT in quoted-string so just add this element to list
+                    quoteChar = s[0];
+                if (quoteChar == null) // NOT in quoted-string so just add this element to list
                 {
                     result.Add(s);
                 }
                 else //we're in a quoted string so accumulate
                 {
-                    if (quoted_str == null)
-                        quoted_str = s; // no accumulated quoted string so far so start with s
+                    if (quotedStr == null)
+                        quotedStr = s; // no accumulated quoted string so far so start with s
                     else
-                        quoted_str += " " + s; // append s to accumulated quoted_str
+                        quotedStr += " " + s; // append s to accumulated quoted_str
                 }
 
                 // check if we just ended a quoted string
-                if (quote_char != null && s.EndsWith(quote_char.ToString())) // end of quoted string
+                if (quoteChar != null && s.EndsWith(quoteChar.ToString())) // end of quoted string
                 {
-                    result.Add(quoted_str.Substring(1).Substring(0, quoted_str.Length - 2));
-                    quoted_str = null;
-                    quote_char = null; // quoted_str is now complete
+                    result.Add(quotedStr.Substring(1).Substring(0, quotedStr.Length - 2));
+                    quotedStr = null;
+                    quoteChar = null; // quoted_str is now complete
                 }
             }
 
             // check to see if we've ended with an incomplete quoted string... if so add it
-            if (quote_char != null && quoted_str != null)
-                result.Add(quoted_str);
+            if (quoteChar != null && quotedStr != null)
+                result.Add(quotedStr);
             return result;
         }
 
@@ -1776,7 +1776,7 @@ namespace PRoConEvents {
             ConsoleWrite("^bLanguage Enforcer ^2Enabled!");
             WriteLog("Language Enforcer: Using folder \"" + PluginFolder + "\" for File operations");
             Enabled = true;
-            RunUpdateTask = _lookForUpdates;
+            RunUpdateTask = LookForUpdates;
             if (SaveCounters)
                 LoadCounters();
         }
@@ -2031,7 +2031,7 @@ blockquote > h4{line-height: 1.5;}
             if (mo == null)
                 mo = MeasureOverride.NoOverride;
 
-            var act = GetAction(mo, le._useAdKatsPunish);
+            var act = GetAction(mo, le.UseAdKatsPunish);
             var pubMsg = mo.PublicMessage ?? PublicMessage;
             var privMsg = mo.PrivateMessage ?? PrivateMessage;
             var yellMsg = mo.YellMessage ?? YellMessage;
@@ -2039,7 +2039,7 @@ blockquote > h4{line-height: 1.5;}
             var tbanTime = mo.TBanTime ?? TBanTime;
             var command = mo.Command ?? Command;
 
-            if (le._useAdKatsPunish && !mo.IsWhitelisted && !mo.NoAdKats) {
+            if (le.UseAdKatsPunish && !mo.IsWhitelisted && !mo.NoAdKats) {
                 var requestHashtable = new Hashtable {
                     { "caller_identity", GetType().Name },
                     { "response_requested", false },
