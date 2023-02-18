@@ -561,8 +561,6 @@ namespace PRoConEvents {
             yield return floatPluginVariable("2 - General|Admin cooldown per day", _adminCoolDown);
             yield return new CPluginVariable("2 - General|Log to", ProconUtil.CreateEnumString<LoggingTarget>(), LogTarget.ToString());
             yield return yesNoPluginVariable("2 - General|Load/Save counters to disk", SaveCounters);
-            yield return unIntPluginVariable("2 - General|Kill delay (ms)", KillDelay);
-            yield return unIntPluginVariable("2 - General|Kill delay on spawn (ms)", KillOnspawnDelay);
             if (SaveCounters)
                 yield return yesNoPluginVariable("2 - General|Save counters on every punish", _saveCountersAsap);
 
@@ -743,12 +741,6 @@ namespace PRoConEvents {
                     return;
                 case "Save counters on every punish":
                     _saveCountersAsap = strValue == yes;
-                    return;
-                case "Kill delay (ms)":
-                    KillDelay = uint.Parse(strValue);
-                    return;
-                case "Kill delay on spawn (ms)":
-                    KillOnspawnDelay = uint.Parse(strValue);
                     return;
                 case "Log violations to AdKats":
                     LogToAdKats = strValue == yes;
@@ -1079,8 +1071,6 @@ namespace PRoConEvents {
         private bool _updateTaskIsRunning;
         protected internal Dictionary<string, string> Countries = new Dictionary<string, string>(); //name to countrycode dict for country specific messages
         protected internal Dictionary<string, string> Guids = new Dictionary<string, string>(); //name to guid dict for adding GUIDs to AdKats calls
-        protected uint KillDelay = 1000;
-        protected uint KillOnspawnDelay = 3000;
         protected LoggingTarget LogTarget = LoggingTarget.PluginConsole;
         protected internal bool LogToAdKats;
         protected bool LookForUpdates = true;
@@ -1661,7 +1651,7 @@ namespace PRoConEvents {
         }
 
         public string GetPluginVersion() {
-            return "1.0.6.0";
+            return "1.0.7.0";
         }
 
         public string GetPluginAuthor() {
