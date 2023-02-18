@@ -25,7 +25,6 @@ namespace PRoConEvents {
         private readonly Regex _failPrevent = new Regex("(\\W(?<![!%\\|\\+\\*'-\\.]))");
         private readonly List<SuccessiveMeasure> _measures = GetDefaultMeasures();
         private readonly Dictionary<string, MeasureOverride> _overrides = new Dictionary<string, MeasureOverride>();
-        internal readonly Dictionary<string, PlayerInfo> Players = new Dictionary<string, PlayerInfo>(); //contains the list of cursing players. key is playername
         private readonly Dictionary<string, string> _regexBadwordSection = new Dictionary<string, string>();
         private float _adminCoolDown = 3; //cooldown steps per day
         private string[] _badwords = new string[0];
@@ -114,7 +113,7 @@ namespace PRoConEvents {
                 new SuccessiveMeasure {
                     Action = BadwordAction.PermaMute,
                     PublicMessage = new[] { "%player% perma muted for Language violation." },
-                    PrivateMessage = new[] { "%player% perma muted for Language violation." },
+                    PrivateMessage = new[] { "%player% perma muted for Language violation." }
                 },
                 new SuccessiveMeasure()
             };
@@ -163,9 +162,6 @@ namespace PRoConEvents {
             catch (Exception exc) {
                 WriteLog(exc.ToString());
             }
-        }
-
-        public override void OnPlayerSpawned(string soldierName, Inventory spawnedInventory) {
         }
 
         public override void OnRoundOver(int winningTeamId) {
@@ -392,9 +388,9 @@ namespace PRoConEvents {
          * This command will always work. The incoming name is already normalized by AdKats)
          */
         public void RemoteManuallyPunishPlayer(params string[] commandParams) {
-            string name = commandParams[1];
+            var name = commandParams[1];
             // Add the guid to the guid cache if it is missing
-            string guid = commandParams[2];
+            var guid = commandParams[2];
             CachePlayerInfo(name, guid);
             TakeMeasure(name, "(Triggered by Admin)", MeasureOverride.NoOverride);
         }
@@ -981,7 +977,7 @@ namespace PRoConEvents {
 
         protected override void WriteCounters() {
             try {
-                File.WriteAllLines(PluginFolder + "LangEnforcerCounters.txt", Players.Select(pair => string.Join(" ", pair.Key, pair.Value.Heat.ToString("0.0000", CultureInfo.InvariantCulture), pair.Value.LastAction.Ticks.ToString())).ToArray());
+                File.WriteAllLines(PluginFolder + "LangEnforcerCounters.txt", Players.Select(pair => string.Join(" ", pair.Key, pair.Value.Heat.ToString("0.0000", CultureInfo.InvariantCulture), pair.Value.LastAction.Ticks.ToString(), pair.Value.Guid)).ToArray());
             }
             catch {
                 WriteLog("^bLanguage Enforcer^2: Couldn't save counters. Please make sure filesystem access is granted");
@@ -992,11 +988,19 @@ namespace PRoConEvents {
             try {
                 Players.Clear();
                 var data = File.ReadAllLines(PluginFolder + "LangEnforcerCounters.txt");
-                foreach (var tokens in data.Select(line => line.Split(' ')))
-                    Players.Add(tokens[0], new PlayerInfo {
+                foreach (var tokens in data.Select(line => line.Split(' '))) {
+                    var player = new PlayerInfo {
                         Heat = double.Parse(tokens[1], CultureInfo.InvariantCulture),
                         LastAction = new DateTime(long.Parse(tokens[2]))
-                    });
+                    };
+                    if (tokens.Length > 3 && tokens[3] != "Unknown") {
+                        player.Guid = tokens[3];
+                        // this is probably useless
+                        Guids.Add(tokens[0], player.Guid);
+                    }
+
+                    Players.Add(tokens[0], player);
+                }
             }
             catch {
                 WriteLog("^bLanguage Enforcer^2: Couldn't load counters. Please make sure filesystem access is granted");
@@ -1038,20 +1042,21 @@ namespace PRoConEvents {
     public abstract class LanguageEnforcerBase : Api {
         private static string _folder; //folder target cache
         protected readonly HashSet<string> Admins = new HashSet<string>(); //online admins for AdminSay() and !admin / HashSet is faster with Contains
-        protected uint KillDelay = 1000;
-        protected uint KillOnspawnDelay = 3000;
-        protected internal bool LogToAdKats;
-        protected bool LookForUpdates = true;
-        private bool _updateTaskIsRunning;
-
-        protected internal bool UseAdKatsPunish;
+        protected internal readonly Dictionary<string, PlayerInfo> Players = new Dictionary<string, PlayerInfo>(); //contains the list of cursing players. key is playername
         private string[] _admins;
+        private bool _updateTaskIsRunning;
         protected internal Dictionary<string, string> Countries = new Dictionary<string, string>(); //name to countrycode dict for country specific messages
         protected internal Dictionary<string, string> Guids = new Dictionary<string, string>(); //name to guid dict for adding GUIDs to AdKats calls
+        protected uint KillDelay = 1000;
+        protected uint KillOnspawnDelay = 3000;
         protected LoggingTarget LogTarget = LoggingTarget.PluginConsole;
+        protected internal bool LogToAdKats;
+        protected bool LookForUpdates = true;
 
         protected int OnlinePlayerCount; //online players to know when to trigger a cleanup
         protected bool SaveCounters = true;
+
+        protected internal bool UseAdKatsPunish;
 
         internal static string PluginFolder
         {
@@ -1110,13 +1115,29 @@ namespace PRoConEvents {
         /// </summary>
         protected void CachePlayerInfo(CPlayerInfo player) {
             CachePlayerInfo(player.SoldierName, player.GUID);
+            CorrectNameChange(player);
+        }
+
+        /// <summary>
+        ///     Go through all players and rename them in the cache if needed.
+        /// </summary>
+        /// <param name="player">Player object.</param>
+        private void CorrectNameChange(CPlayerInfo player) {
+            foreach (var curName in Players.Keys)
+                if (Players[curName].Guid == player.GUID && curName != player.SoldierName) {
+                    var existing = Players[curName];
+                    Players.Remove(curName);
+                    Players.Add(player.SoldierName, existing);
+                    break;
+                }
         }
 
         /// <summary>
         ///     Enlists the GUID from the player for banning with GUIDs instead of names
         /// </summary>
         protected void CachePlayerInfo(CPunkbusterInfo player) {
-            CachePlayerInfo(player.SoldierName, player.GUID);
+            // Do not cache punkbuster infos at all -> we care about EA GUIDs
+            // CachePlayerInfo(player.SoldierName, player.GUID);
         }
 
         /// <summary>
@@ -1263,6 +1284,11 @@ namespace PRoConEvents {
             ExecuteCommand("procon.protected.pluginconsole.write", message);
         }
 
+        /// <summary>
+        ///     Log a violation to AdKats.
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="message"></param>
         public void Log(string player, string message) {
             if (!LogToAdKats)
                 return;
@@ -1409,7 +1435,7 @@ namespace PRoConEvents {
         public void KillPlayer(string player, string reason) {
             ExecuteAdKatsCommand("player_kill", player, reason);
         }
-        
+
         public void KickPlayer(string player, string reason) {
             WriteLog(string.Format("LanguageEnforcer: Player {0} kicked.", player));
             ExecuteAdKatsCommand("player_kick", player, reason);
@@ -1438,8 +1464,9 @@ namespace PRoConEvents {
                 commandNumeric = minutes;
                 readable = minutes + " minutes";
             }
+
             WriteLog(string.Format("LanguageEnforcer: Player {0} temp/perma {1}muted over AdKats (Duration: {2})", player, force ? "force " : "", readable));
-            
+
             var commandKey = force ? "player_peristentmute_force" : "player_persistentmute";
             ExecuteAdKatsCommand(commandKey, player, reason, commandNumeric);
         }
@@ -1801,7 +1828,8 @@ blockquote > h4{line-height: 1.5;}
         }
     }
 
-    internal class PlayerInfo {
+    public class PlayerInfo {
+        public string Guid = "Unknown";
         public double Heat;
         public DateTime LastAction;
     }
