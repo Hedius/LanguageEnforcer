@@ -1137,6 +1137,8 @@ namespace PRoConEvents {
                     Players.Add(name, existing);
                     break;
                 }
+            if (Players.ContainsKey(name) && Players[name].Guid != guid)
+                Players[name].Guid = guid;
         }
 
         /// <summary>
