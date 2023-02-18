@@ -391,7 +391,12 @@ namespace PRoConEvents {
          * This command will always work. The incoming name is already normalized by AdKats)
          */
         public void RemoteManuallyPunishPlayer(params string[] commandParams) {
-            TakeMeasure(commandParams[1], "(Triggered by Admin)", MeasureOverride.NoOverride);
+            string name = commandParams[1];
+            // Add the guid to the guid cache if it is missing
+            string guid = commandParams[2];
+            if (!Guids.ContainsKey(name))
+                Guids[name] = guid;
+            TakeMeasure(name, "(Triggered by Admin)", MeasureOverride.NoOverride);
         }
 
         /// <summary>
@@ -1042,7 +1047,7 @@ namespace PRoConEvents {
         protected internal bool UseAdKatsPunish;
         private string[] _admins;
         protected internal Dictionary<string, string> Countries = new Dictionary<string, string>(); //name to countrycode dict for country specific messages
-        protected internal Dictionary<string, string> Guids = new Dictionary<string, string>(); //name to guid dict for banning via guid
+        protected internal Dictionary<string, string> Guids = new Dictionary<string, string>(); //name to guid dict for adding GUIDs to AdKats calls
         protected LoggingTarget LogTarget = LoggingTarget.PluginConsole;
 
         protected int OnlinePlayerCount; //online players to know when to trigger a cleanup
