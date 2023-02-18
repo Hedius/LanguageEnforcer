@@ -32,7 +32,6 @@ namespace PRoConEvents {
         private string[] _badwordsCache = new string[0];
         private float _coolDown = 3; //cooldown steps per day
         private bool _disallowPlayerSelfReset;
-        private bool _enableLatentKills = true;
         private bool _ignoreSquadChat;
         private uint _maxUpdateCounter = 6;
         private Regex[] _regexBadwords = new Regex[0];
@@ -164,46 +163,13 @@ namespace PRoConEvents {
             catch (Exception exc) {
                 WriteLog(exc.ToString());
             }
-
-            try {
-                if (Players.ContainsKey(k.Victim.SoldierName))
-                    Players[k.Victim.SoldierName].Dead = true;
-            }
-            catch (Exception exc) {
-                WriteLog(exc.ToString());
-            }
         }
 
         public override void OnPlayerSpawned(string soldierName, Inventory spawnedInventory) {
-            try {
-                if (Tbd.Contains(soldierName)) {
-                    Tbd.Remove(soldierName);
-                    KillPlayer(soldierName, KillOnspawnDelay);
-                    ThreadPool.QueueUserWorkItem(callback => {
-                        try {
-                            Thread.Sleep(2900);
-                            AdminSay("LanguageEnforcer: Latent kill of " + soldierName + " done");
-                            PlayerSay(soldierName, ProconUtil.ProcessMessage(_resLatentKill, soldierName, false, 0, "", false, this));
-                        }
-                        catch (Exception exc) {
-                            WriteLog(exc.ToString());
-                        }
-                    }, null);
-                }
-                else if (Players.ContainsKey(soldierName)) {
-                    Players[soldierName].Dead = false;
-                }
-            }
-            catch (Exception exc) {
-                WriteLog(exc.ToString());
-            }
         }
 
         public override void OnRoundOver(int winningTeamId) {
             base.OnRoundOver(winningTeamId);
-
-            foreach (var player in Players)
-                player.Value.Dead = true;
         }
 
         /// <summary>
@@ -579,7 +545,6 @@ namespace PRoConEvents {
             yield return floatPluginVariable("2 - General|Cooldown steps per day", _coolDown);
             yield return floatPluginVariable("2 - General|Admin cooldown per day", _adminCoolDown);
             yield return new CPluginVariable("2 - General|Log to", ProconUtil.CreateEnumString<LoggingTarget>(), LogTarget.ToString());
-            yield return yesNoPluginVariable("2 - General|Enable latent kills", _enableLatentKills);
             yield return yesNoPluginVariable("2 - General|Load/Save counters to disk", SaveCounters);
             yield return unIntPluginVariable("2 - General|Kill delay (ms)", KillDelay);
             yield return unIntPluginVariable("2 - General|Kill delay on spawn (ms)", KillOnspawnDelay);
@@ -758,9 +723,6 @@ namespace PRoConEvents {
                     return;
                 case "Log to":
                     LogTarget = Enum.Parse(typeof(LoggingTarget), CPluginVariable.Decode(strValue)) as LoggingTarget? ?? LoggingTarget.Console;
-                    return;
-                case "Enable latent kills":
-                    _enableLatentKills = strValue == yes;
                     return;
                 case "Load/Save counters to disk":
                     SaveCounters = strValue == yes;
@@ -1096,7 +1058,6 @@ namespace PRoConEvents {
     public abstract class LanguageEnforcerBase : Api {
         private static string _folder; //folder target cache
         protected readonly HashSet<string> Admins = new HashSet<string>(); //online admins for AdminSay() and !admin / HashSet is faster with Contains
-        protected readonly HashSet<string> Tbd = new HashSet<string>(); //list of players who cursed while dead / HashSet doesn't allow duplicates, but we don't want to annoy them too much
         protected uint KillDelay = 1000;
         protected uint KillOnspawnDelay = 3000;
         protected internal bool LogToAdKats;
@@ -1193,7 +1154,6 @@ namespace PRoConEvents {
             Guids.Clear();
             Countries.Clear();
             Admins.Clear();
-            Tbd.Clear();
         }
 
         public void WriteLog(string message) {
@@ -1241,7 +1201,6 @@ namespace PRoConEvents {
             try {
                 //no need to check if contained in HashSet before remove
                 Admins.Remove(playerInfo.SoldierName);
-                Tbd.Remove(playerInfo.SoldierName);
 
                 OnlinePlayerCount--;
                 if (OnlinePlayerCount <= 0) {
@@ -1274,9 +1233,6 @@ namespace PRoConEvents {
                     Cleanup();
                     if (SaveCounters)
                         WriteCounters();
-                }
-                else {
-                    Tbd.RemoveWhere(player => !players.Any(p => p.SoldierName == player));
                 }
             }
             catch (Exception exc) {
@@ -2002,7 +1958,6 @@ blockquote > h4{line-height: 1.5;}
     }
 
     internal class PlayerInfo {
-        public bool Dead;
         public double Heat;
         public DateTime LastAction;
     }
