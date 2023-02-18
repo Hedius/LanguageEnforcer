@@ -89,27 +89,33 @@ namespace PRoConEvents {
                 },
                 new SuccessiveMeasure {
                     Action = BadwordAction.Kill,
-                    PublicMessage = new[] { "%player% killed for Language violation. {Next Time: Kick}" },
+                    PublicMessage = new[] { "%player% killed for Language violation. {Next Time: Mute}" },
                     PrivateMessage = new[] { "%player%, you risk being REMOVED if you continue using this type of lanuage!" },
                     YellMessage = new[] { "Watch your Language!" },
                     YellTime = 30
                 },
                 new SuccessiveMeasure {
-                    Action = BadwordAction.Kick,
-                    PublicMessage = new[] { "%player% kicked for Language violation. {Next Time: TempBan}" },
-                    PrivateMessage = new[] { "%player% kicked for Language violation. {Next Time: TempBan}" }
+                    Action = BadwordAction.Mute,
+                    PublicMessage = new[] { "%player% muted for Language violation. {Next Time: TempMute}" },
+                    PrivateMessage = new[] { "%player% muted for Language violation. {Next Time: TempMute}" }
                 },
                 new SuccessiveMeasure {
-                    Action = BadwordAction.TBan,
-                    PublicMessage = new[] { "%player% temp banned %time% minutes for Language violation." },
-                    PrivateMessage = new[] { "%player% temp banned %time% minutes for Language violation." },
-                    TBanTime = 30
+                    Action = BadwordAction.TempMute,
+                    PublicMessage = new[] { "%player% temp muted %time% minutes for Language violation." },
+                    PrivateMessage = new[] { "%player% temp muted %time% minutes for Language violation." },
+                    TBanTime = 120,
+                    Count = 3
                 },
                 new SuccessiveMeasure {
-                    Action = BadwordAction.TBan,
-                    PublicMessage = new[] { "%player% temp banned %time% minutes for Language violation." },
-                    PrivateMessage = new[] { "%player% temp banned %time% minutes for Language violation." },
-                    TBanTime = 45
+                    Action = BadwordAction.TempMute,
+                    PublicMessage = new[] { "%player% temp muted %time% minutes for Language violation." },
+                    PrivateMessage = new[] { "%player% temp muted %time% minutes for Language violation." },
+                    TBanTime = 900
+                },
+                new SuccessiveMeasure {
+                    Action = BadwordAction.PermaMute,
+                    PublicMessage = new[] { "%player% perma muted for Language violation." },
+                    PrivateMessage = new[] { "%player% perma muted for Language violation." },
                 },
                 new SuccessiveMeasure()
             };
