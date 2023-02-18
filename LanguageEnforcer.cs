@@ -440,6 +440,8 @@ namespace PRoConEvents {
                     LastAction = DateTime.Now,
                     Heat = -1F
                 };
+                if (Guids.ContainsKey(speaker))
+                    pi.Guid = Guids[speaker];
                 Players.Add(speaker, pi);
             }
 
@@ -1120,19 +1122,19 @@ namespace PRoConEvents {
         /// </summary>
         protected void CachePlayerInfo(CPlayerInfo player) {
             CachePlayerInfo(player.SoldierName, player.GUID);
-            CorrectNameChange(player);
         }
 
         /// <summary>
         ///     Go through all players and rename them in the cache if needed.
         /// </summary>
-        /// <param name="player">Player object.</param>
-        private void CorrectNameChange(CPlayerInfo player) {
+        /// <param name="name">Player name.</param>
+        /// <param name="guid">Player guid.</param>
+        private void CorrectNameChange(string name, string guid) {
             foreach (var curName in Players.Keys)
-                if (Players[curName].Guid == player.GUID && curName != player.SoldierName) {
+                if (Players[curName].Guid == guid && curName != name) {
                     var existing = Players[curName];
                     Players.Remove(curName);
-                    Players.Add(player.SoldierName, existing);
+                    Players.Add(name, existing);
                     break;
                 }
         }
@@ -1152,6 +1154,7 @@ namespace PRoConEvents {
             if (Guids.ContainsKey(name))
                 Guids.Remove(name);
             Guids.Add(name, guid);
+            CorrectNameChange(name, guid);
         }
 
         protected virtual void Cleanup() {
