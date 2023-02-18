@@ -25,7 +25,7 @@ namespace PRoConEvents {
         private readonly Regex _failPrevent = new Regex("(\\W(?<![!%\\|\\+\\*'-\\.]))");
         private readonly List<SuccessiveMeasure> _measures = GetDefaultMeasures();
         private readonly Dictionary<string, MeasureOverride> _overrides = new Dictionary<string, MeasureOverride>();
-        internal readonly Dictionary<string, PlayerInfo> _players = new Dictionary<string, PlayerInfo>(); //contains the list of cursing players. key is playername
+        internal readonly Dictionary<string, PlayerInfo> Players = new Dictionary<string, PlayerInfo>(); //contains the list of cursing players. key is playername
         private readonly Dictionary<string, string> _regexBadwordSection = new Dictionary<string, string>();
         private float _adminCoolDown = 3; //cooldown steps per day
         private string[] _badwords = new string[0];
@@ -160,8 +160,8 @@ namespace PRoConEvents {
             }
 
             try {
-                if (_players.ContainsKey(k.Victim.SoldierName))
-                    _players[k.Victim.SoldierName].Dead = true;
+                if (Players.ContainsKey(k.Victim.SoldierName))
+                    Players[k.Victim.SoldierName].Dead = true;
             }
             catch (Exception exc) {
                 WriteLog(exc.ToString());
@@ -184,8 +184,8 @@ namespace PRoConEvents {
                         }
                     }, null);
                 }
-                else if (_players.ContainsKey(soldierName)) {
-                    _players[soldierName].Dead = false;
+                else if (Players.ContainsKey(soldierName)) {
+                    Players[soldierName].Dead = false;
                 }
             }
             catch (Exception exc) {
@@ -196,7 +196,7 @@ namespace PRoConEvents {
         public override void OnRoundOver(int winningTeamId) {
             base.OnRoundOver(winningTeamId);
 
-            foreach (var player in _players)
+            foreach (var player in Players)
                 player.Value.Dead = true;
         }
 
@@ -207,13 +207,13 @@ namespace PRoConEvents {
         protected override void Cleanup() {
             base.Cleanup();
 
-            var temp = _players.ToArray(); //remove in foreach will otherwise kill the enumerator
+            var temp = Players.ToArray(); //remove in foreach will otherwise kill the enumerator
             foreach (var player in temp) {
                 var days = (DateTime.Now - player.Value.LastAction).TotalDays;
                 player.Value.Heat = Math.Max(-1D, player.Value.Heat - GetCooldown(player.Key) * days);
                 player.Value.LastAction = DateTime.Now;
                 if (player.Value.Heat < -0.9D)
-                    _players.Remove(player.Key);
+                    Players.Remove(player.Key);
             }
         }
 
@@ -281,7 +281,7 @@ namespace PRoConEvents {
                     }
 
                     if (whitelisted)
-                        _players.Remove(speaker);
+                        Players.Remove(speaker);
                 }
             }
             catch (Exception exc) {
@@ -347,15 +347,15 @@ namespace PRoConEvents {
                         return false;
 
                     PlayerInfo pi;
-                    if (_players.ContainsKey(speaker)) {
-                        pi = _players[speaker];
+                    if (Players.ContainsKey(speaker)) {
+                        pi = Players[speaker];
                     }
                     else {
                         pi = new PlayerInfo {
                             LastAction = DateTime.Now,
                             Heat = -1F
                         };
-                        _players.Add(speaker, pi);
+                        Players.Add(speaker, pi);
                     }
 
                     if (args.Length == 2) {
@@ -397,7 +397,7 @@ namespace PRoConEvents {
             if (_disallowPlayerSelfReset && speaker == player)
                 return false;
 
-            _players.Remove(player);
+            Players.Remove(player);
             PlayerSay(player, ProconUtil.ProcessMessage(_resCounterReset, player, false, 0, "", false, this));
             AdminSay(string.Format("LanguageEnforcer: Player {0} now has a clean jacket", player));
             return true;
@@ -428,7 +428,7 @@ namespace PRoConEvents {
         /// <param name="player">a fragment of a player name</param>
         /// <returns>the actual player name or null if there were 0 or multiple matches</returns>
         private string FindPlayerName(string player) {
-            var names = _players.Where(p => p.Key.ContainsIgnoreCaseFast(player)).ToArray();
+            var names = Players.Where(p => p.Key.ContainsIgnoreCaseFast(player)).ToArray();
             if (names.Length != 1) {
                 var names2 = Guids.Where(p => p.Key.ContainsIgnoreCaseFast(player)).ToArray();
                 if (names2.Length != 1)
@@ -444,15 +444,15 @@ namespace PRoConEvents {
         /// </summary>
         private void TakeMeasure(string speaker, string quote, MeasureOverride mo) {
             PlayerInfo pi;
-            if (_players.ContainsKey(speaker)) {
-                pi = _players[speaker];
+            if (Players.ContainsKey(speaker)) {
+                pi = Players[speaker];
             }
             else {
                 pi = new PlayerInfo {
                     LastAction = DateTime.Now,
                     Heat = -1F
                 };
-                _players.Add(speaker, pi);
+                Players.Add(speaker, pi);
             }
 
             if (pi.Heat > -1) {
@@ -482,27 +482,18 @@ namespace PRoConEvents {
         }
 
         public void KillOrLatentKillPlayer(string player, string message) {
-            if (_useAdKatsBan || _useAdKatsPunish) {
-                var requestHashtable = new Hashtable {
-                    { "caller_identity", GetType().Name },
-                    { "response_requested", false },
-                    { "command_type", "player_kill" },
-                    { "source_name", GetType().Name },
-                    { "target_name", player },
-                    { "record_message", message }
-                };
-                if (Guids.ContainsKey(player))
-                    requestHashtable.Add("target_guid", Guids[player]);
+            var requestHashtable = new Hashtable {
+                { "caller_identity", GetType().Name },
+                { "response_requested", false },
+                { "command_type", "player_kill" },
+                { "source_name", GetType().Name },
+                { "target_name", player },
+                { "record_message", message }
+            };
+            if (Guids.ContainsKey(player))
+                requestHashtable.Add("target_guid", Guids[player]);
 
-                ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-            }
-            else if (_enableLatentKills && _players[player].Dead) {
-                Tbd.Add(player);
-            }
-            else {
-                KillPlayer(player);
-                _players[player].Dead = true;
-            }
+            ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
         }
 
         private SuccessiveMeasure GetMeasure(int measureIdx, out BadwordAction nextAction) {
@@ -531,8 +522,8 @@ namespace PRoConEvents {
         }
 
         internal int GetCounter(string player) {
-            if (_players.ContainsKey(player)) {
-                var pi = _players[player];
+            if (Players.ContainsKey(player)) {
+                var pi = Players[player];
                 var days = (DateTime.Now - pi.LastAction).TotalDays;
                 return (int)Math.Ceiling(Math.Max(0F, pi.Heat - GetCooldown(player) * days)) + 1;
             }
@@ -592,8 +583,6 @@ namespace PRoConEvents {
             yield return YesNoPluginVariable("2 - General|Let AdKats determine who is an admin", _useAdKatsAdmins);
             yield return YesNoPluginVariable("2 - General|Log violations to AdKats", _logToAdKats);
             yield return YesNoPluginVariable("2 - General|Use AdKats punishment", _useAdKatsPunish);
-            if (!_useAdKatsPunish)
-                yield return YesNoPluginVariable("2 - General|Use AdKats to issue kills and bans", _useAdKatsBan);
             if (!_useAdKatsAdmins)
                 yield return YesNoPluginVariable("2 - General|Get Admins from textfile", GetAdminsFromDisk);
             yield return YesNoPluginVariable("2 - General|Look for Updates", LookForUpdates);
@@ -787,9 +776,6 @@ namespace PRoConEvents {
                     return;
                 case "Use AdKats punishment":
                     _useAdKatsPunish = strValue == yes;
-                    return;
-                case "Use AdKats to issue kills and bans":
-                    _useAdKatsBan = strValue == yes;
                     return;
                 case "Get Admins from textfile":
                     GetAdminsFromDisk = strValue == yes;
@@ -1047,7 +1033,7 @@ namespace PRoConEvents {
 
         protected override void WriteCounters() {
             try {
-                File.WriteAllLines(PluginFolder + "LangEnforcerCounters.txt", _players.Select(pair => string.Join(" ", pair.Key, pair.Value.Heat.ToString("0.0000", CultureInfo.InvariantCulture), pair.Value.LastAction.Ticks.ToString())).ToArray());
+                File.WriteAllLines(PluginFolder + "LangEnforcerCounters.txt", Players.Select(pair => string.Join(" ", pair.Key, pair.Value.Heat.ToString("0.0000", CultureInfo.InvariantCulture), pair.Value.LastAction.Ticks.ToString())).ToArray());
             }
             catch {
                 WriteLog("^bLanguage Enforcer^2: Couldn't save counters. Please make sure filesystem access is granted");
@@ -1056,10 +1042,10 @@ namespace PRoConEvents {
 
         protected override void LoadCounters() {
             try {
-                _players.Clear();
+                Players.Clear();
                 var data = File.ReadAllLines(PluginFolder + "LangEnforcerCounters.txt");
                 foreach (var tokens in data.Select(line => line.Split(' ')))
-                    _players.Add(tokens[0], new PlayerInfo {
+                    Players.Add(tokens[0], new PlayerInfo {
                         Heat = double.Parse(tokens[1], CultureInfo.InvariantCulture),
                         LastAction = new DateTime(long.Parse(tokens[2]))
                     });
@@ -1112,7 +1098,6 @@ namespace PRoConEvents {
         private bool _updateTaskIsRunning;
         protected internal bool _useAdKatsAdmins;
 
-        protected internal bool _useAdKatsBan;
         protected internal bool _useAdKatsPunish;
         private string[] admins;
         protected internal Dictionary<string, string> Countries = new Dictionary<string, string>(); //name to countrycode dict for country specific messages
@@ -1550,23 +1535,18 @@ namespace PRoConEvents {
             ThreadPool.QueueUserWorkItem(callback => {
                 try {
                     Thread.Sleep(500);
-                    if (_useAdKatsBan || _useAdKatsPunish) {
-                        var requestHashtable = new Hashtable {
-                            { "caller_identity", GetType().Name },
-                            { "response_requested", false },
-                            { "command_type", "player_kick" },
-                            { "source_name", GetType().Name },
-                            { "target_name", player },
-                            { "record_message", reason }
-                        };
-                        if (Guids.ContainsKey(player))
-                            requestHashtable.Add("target_guid", Guids[player]);
+                    var requestHashtable = new Hashtable {
+                        { "caller_identity", GetType().Name },
+                        { "response_requested", false },
+                        { "command_type", "player_kick" },
+                        { "source_name", GetType().Name },
+                        { "target_name", player },
+                        { "record_message", reason }
+                    };
+                    if (Guids.ContainsKey(player))
+                        requestHashtable.Add("target_guid", Guids[player]);
 
-                        ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-                    }
-                    else {
-                        ExecuteCommand("procon.protected.send", "admin.kickPlayer", player, reason);
-                    }
+                    ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
                 }
                 catch (Exception exc) {
                     WriteLog(exc.ToString());
@@ -1579,30 +1559,19 @@ namespace PRoConEvents {
             ThreadPool.QueueUserWorkItem(callback => {
                 try {
                     Thread.Sleep(500);
-                    if (_useAdKatsBan || _useAdKatsPunish) {
-                        var requestHashtable = new Hashtable {
-                            { "caller_identity", GetType().Name },
-                            { "response_requested", false },
-                            { "command_type", "player_ban_temp" },
-                            { "source_name", GetType().Name },
-                            { "target_name", player },
-                            { "record_message", reason },
-                            { "command_numeric", minutes }
-                        };
-                        if (Guids.ContainsKey(player))
-                            requestHashtable.Add("target_guid", Guids[player]);
+                    var requestHashtable = new Hashtable {
+                        { "caller_identity", GetType().Name },
+                        { "response_requested", false },
+                        { "command_type", "player_ban_temp" },
+                        { "source_name", GetType().Name },
+                        { "target_name", player },
+                        { "record_message", reason },
+                        { "command_numeric", minutes }
+                    };
+                    if (Guids.ContainsKey(player))
+                        requestHashtable.Add("target_guid", Guids[player]);
 
-                        ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-                    }
-                    else {
-                        var time = minutes * 60;
-                        if (Guids.ContainsKey(player))
-                            ExecuteCommand("procon.protected.send", "banList.add", "guid", Guids[player], "seconds", time.ToString(CultureInfo.InvariantCulture), reason);
-                        else
-                            ExecuteCommand("procon.protected.send", "banList.add", "name", player, "seconds", time.ToString(CultureInfo.InvariantCulture), reason);
-                        ExecuteCommand("procon.protected.send", "banList.save");
-                        ExecuteCommand("procon.protected.send", "admin.kickPlayer", player, reason);
-                    }
+                    ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
                 }
                 catch (Exception exc) {
                     WriteLog(exc.ToString());
@@ -1615,29 +1584,18 @@ namespace PRoConEvents {
             ThreadPool.QueueUserWorkItem(callback => {
                 try {
                     Thread.Sleep(500);
-                    if (_useAdKatsBan || _useAdKatsPunish) {
-                        var requestHashtable = new Hashtable {
-                            { "caller_identity", GetType().Name },
-                            { "response_requested", false },
-                            { "command_type", "player_ban_perm" },
-                            { "source_name", GetType().Name },
-                            { "target_name", player },
-                            { "record_message", reason }
-                        };
-                        if (Guids.ContainsKey(player))
-                            requestHashtable.Add("target_guid", Guids[player]);
+                    var requestHashtable = new Hashtable {
+                        { "caller_identity", GetType().Name },
+                        { "response_requested", false },
+                        { "command_type", "player_ban_perm" },
+                        { "source_name", GetType().Name },
+                        { "target_name", player },
+                        { "record_message", reason }
+                    };
+                    if (Guids.ContainsKey(player))
+                        requestHashtable.Add("target_guid", Guids[player]);
 
-                        ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
-                    }
-                    else if (Guids.ContainsKey(player)) {
-                        ExecuteCommand("procon.protected.send", "banList.add", "guid", Guids[player], "perm", reason);
-                    }
-                    else {
-                        ExecuteCommand("procon.protected.send", "banList.add", "name", player, "perm", reason);
-                    }
-
-                    ExecuteCommand("procon.protected.send", "banList.save");
-                    ExecuteCommand("procon.protected.send", "admin.kickPlayer", player, reason);
+                    ExecuteCommand("procon.protected.plugins.call", "AdKats", "IssueCommand", GetType().Name, JSON.JsonEncode(requestHashtable));
                 }
                 catch (Exception exc) {
                     WriteLog(exc.ToString());
@@ -1646,12 +1604,6 @@ namespace PRoConEvents {
         }
 
         public void MutePlayer(string player, string reason) {
-            if (!_useAdKatsBan && !_useAdKatsPunish) {
-                WriteLog(string.Format("LanguageEnforcer: Player {0} kicked. (Mute & AdKats not available!)", player));
-                KickPlayer(player, reason);
-                return;
-            }
-
             WriteLog(string.Format("LanguageEnforcer: Player {0} muted over AdKats", player));
             ThreadPool.QueueUserWorkItem(callback => {
                 try {
@@ -1684,13 +1636,6 @@ namespace PRoConEvents {
             }
 
             var commandKey = force ? "player_peristentmute_force" : "player_persistentmute";
-
-            // AdKats here?
-            if (!_useAdKatsBan && !_useAdKatsPunish) {
-                WriteLog(string.Format("LanguageEnforcer: Player {0} kicked. (Mute & AdKats not available!)", player));
-                KickPlayer(player, reason);
-                return;
-            }
 
             WriteLog(string.Format("LanguageEnforcer: Player {0} temp/perma {1}muted over AdKats (Duration: {2})", player, force ? "force " : "", readable));
 
@@ -2181,8 +2126,8 @@ blockquote > h4{line-height: 1.5;}
                 return;
 
             var counter = 0;
-            if (le._players.ContainsKey(player)) {
-                var p = le._players[player];
+            if (le.Players.ContainsKey(player)) {
+                var p = le.Players[player];
                 counter = (int)Math.Floor(p.Heat);
             }
 
