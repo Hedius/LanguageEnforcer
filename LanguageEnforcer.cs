@@ -202,9 +202,9 @@ namespace PRoConEvents
 					case BadwordAction.PermaMute:
 						yield return ActinPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Measure", dispNo, measure.Count), meastring);
 						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count);
-                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
-                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
-                    	yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
+                    				yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Public chat message", dispNo, measure.Count), measure.PublicMessage);
+                    				yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Mute reason", dispNo, measure.Count), measure.PrivateMessage);
+                    				yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Permanent Mute x{1}|Measure #{0} - Command", dispNo, measure.Count), measure.Command);
 						break;
 					// Hedius: Well... this is fully redundant, but I am too lazy to fix the code of other persons. So i gotta make it worse. Shame on me...
 					// actually switching the text field value would be nicer... not gonna do it... works like that...
@@ -213,7 +213,7 @@ namespace PRoConEvents
 						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Repeat X times", dispNo, measure.Count, measure.TBanTime), measure.Count); 
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Public chat message", dispNo, measure.Count, measure.TBanTime), measure.PublicMessage); 
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Mute reason", dispNo, measure.Count, measure.TBanTime), measure.PrivateMessage);
-						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Temp Fore Mute{2} x{1}|Measure #{0} - Mute minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime); 
+						yield return UnIntPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Mute minutes", dispNo, measure.Count, measure.TBanTime), measure.TBanTime); 
 						yield return SArayPluginVariable(String.Format("3.{0} - Measure {0} - Temp Force Mute{2} x{1}|Measure #{0} - Command", dispNo, measure.Count, measure.TBanTime), measure.Command); 
 						break;
 					case BadwordAction.PermaForceMute:
