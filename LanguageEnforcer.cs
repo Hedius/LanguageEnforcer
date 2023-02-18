@@ -395,8 +395,7 @@ namespace PRoConEvents {
             string name = commandParams[1];
             // Add the guid to the guid cache if it is missing
             string guid = commandParams[2];
-            if (!Guids.ContainsKey(name))
-                Guids[name] = guid;
+            CachePlayerInfo(name, guid);
             TakeMeasure(name, "(Triggered by Admin)", MeasureOverride.NoOverride);
         }
 
