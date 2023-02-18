@@ -170,6 +170,7 @@ namespace PRoConEvents {
 
         public override void OnRoundOver(int winningTeamId) {
             base.OnRoundOver(winningTeamId);
+            Guids.Clear();
         }
 
         /// <summary>
@@ -1194,7 +1195,6 @@ namespace PRoConEvents {
 
         public override void OnListPlayers(List<CPlayerInfo> players, CPlayerSubset subset) {
             try {
-                Guids.Clear();
                 players.ForEach(CachePlayerInfo);
                 OnlinePlayerCount = players.Count;
 
