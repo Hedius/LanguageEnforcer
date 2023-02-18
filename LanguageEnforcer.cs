@@ -23,13 +23,8 @@ namespace PRoConEvents
 		private readonly Regex _failPrevent = new Regex("(\\W(?<![!%\\|\\+\\*'-\\.]))");
 
 		private string _resLatentKill = "LanguageEnforcer killed for previous language";
-		private string _resOnlineAdmins = "Online Admins: ";
-		private string _resNoOnlineAdmins = "Sorry. No Admins are online at this time.";
 		private string _resCounterReset = "Your Language counter has been reset.";
 		private string[] _resLangInfo = { "LanguageEnforcer kills do not affect your stats!", "Lang killed while dead = kill on spawn", "Your counter will be decreased by %cooldown% daily", "Your current counter reads %count%" };
-		private string[] _adminHelpText = { "!kill, !kick [reason], !tban [reason], !ban [reason]", "!nuke + !cancel", "!say, !psay [player], !yell, !pyell [player]", "!langreset [player] -- badword akte loeschen", "!langpunish [player] -- manuelles ausloesen bei badword" };
-		private string[] _helpText = { "use !admin to list online Admins", "NO RULES on this Server" };
-
 
 		private readonly char[] _commandStartChars = { '!', '#', '@', '/' };
 		private DateTime _startup; //deactivate the regex setting for the first few seconds to prevent messup via procon
@@ -51,7 +46,6 @@ namespace PRoConEvents
 		private bool _warnWhitelisted; //tells if whitelisted players should be warned
 		private bool _ignoreSquadChat;
 		private bool _enableLatentKills = true;
-		private bool _extendedFunctions = true; //!help !admin ...
 
 		private uint _updateCounter = 5;
 		private uint _maxUpdateCounter = 6;
@@ -127,7 +121,6 @@ namespace PRoConEvents
 			yield return new CPluginVariable("2 - General|Log to", ProconUtil.CreateEnumString<LoggingTarget>(), LogTarget.ToString());
 			yield return YesNoPluginVariable("2 - General|Enable latent kills", _enableLatentKills);
 			yield return YesNoPluginVariable("2 - General|Load/Save counters to disk", SaveCounters);
-			yield return YesNoPluginVariable("2 - General|Use Punkbuster GUIDs", _usePbGuid);
 			yield return UnIntPluginVariable("2 - General|Kill delay (ms)", _killDelay);
 			yield return UnIntPluginVariable("2 - General|Kill delay on spawn (ms)", _killOnspawnDelay);
 			if (SaveCounters)
@@ -251,11 +244,6 @@ namespace PRoConEvents
 			yield return StrngPluginVariable("5 - Messages|Latent kill message", _resLatentKill);
 			yield return StrngPluginVariable("5 - Messages|Counter reset message", _resCounterReset);
 			yield return SArayPluginVariable("5 - Messages|!langinfo message", _resLangInfo);
-			if (_extendedFunctions || getAll)
-			{
-				yield return StrngPluginVariable("5 - Messages|Online admins message header", _resOnlineAdmins);
-				yield return StrngPluginVariable("5 - Messages|No admins online message", _resNoOnlineAdmins);
-			}
 
 			var sections = _badwordSection.Values.Concat(_regexBadwordSection.Values).Distinct().ToArray();
 			for (int index = 0; index < sections.Length; index++)
@@ -300,13 +288,6 @@ namespace PRoConEvents
 				}
 			}
 
-			yield return YesNoPluginVariable("7 - Extended Functions|Enable Extended Functions", _extendedFunctions);
-			if (_extendedFunctions || getAll)
-			{
-				yield return SArayPluginVariable("7 - Extended Functions|Helptext for Admins", _adminHelpText);
-				yield return SArayPluginVariable("7 - Extended Functions|Helptext for Players", _helpText);
-			}
-
 			if (!getAll) //do not save
 			{
 				yield return new CPluginVariable("0 - Commands|Manually punish Player (Not a setting)", typeof(string), "");
@@ -339,9 +320,6 @@ namespace PRoConEvents
 					return;
 				case "Save counters on every punish":
 					_saveCountersAsap = strValue == yes;
-					return;
-				case "Use Punkbuster GUIDs":
-					_usePbGuid = strValue == yes;
 					return;
 				case "Kill delay (ms)":
 					_killDelay = uint.Parse(strValue);
@@ -394,17 +372,6 @@ namespace PRoConEvents
 				case "Regex Badwords":
 					WriteBadwords(strValue, true);
 					return;
-
-				case "Enable Extended Functions":
-					_extendedFunctions = strValue == yes;
-					return;
-				case "Helptext for Admins":
-					_adminHelpText = CPluginVariable.DecodeStringArray(strValue);
-					return;
-				case "Helptext for Players":
-					_helpText = CPluginVariable.DecodeStringArray(strValue);
-					return;
-
 				case "Latent kill message":
 					_resLatentKill = CPluginVariable.Decode(strValue);
 					return;
@@ -414,14 +381,6 @@ namespace PRoConEvents
 				case "!langinfo message":
 					_resLangInfo = CPluginVariable.DecodeStringArray(strValue);
 					return;
-
-				case "Online admins message header":
-					_resOnlineAdmins = CPluginVariable.Decode(strValue);
-					return;
-				case "No admins online message":
-					_resNoOnlineAdmins = CPluginVariable.Decode(strValue);
-					return;
-
 				case "Manually punish Player (Not a setting)":
 					ManuallyPunishPlayer("Server", CPluginVariable.Decode(strValue).Trim());
 					return;
@@ -777,16 +736,15 @@ namespace PRoConEvents
 
 		public override void OnPlayerKilled(Kill k)
 		{
-			if (!_usePbGuid)
-				try
-				{
-					CachePlayerInfo(k.Killer);
-					CachePlayerInfo(k.Victim);
-				}
-				catch (Exception exc)
-				{
-					WriteLog(exc.ToString());
-				}
+			try
+			{
+				CachePlayerInfo(k.Killer);
+				CachePlayerInfo(k.Victim);
+			}
+			catch (Exception exc)
+			{
+				WriteLog(exc.ToString());
+			}
 
 			try
 			{
@@ -1033,54 +991,7 @@ namespace PRoConEvents
 					}
 					return true;
 				}
-
-				if (_extendedFunctions && (message.StartsWith("help", StringComparison.OrdinalIgnoreCase) || message.StartsWith("rules", StringComparison.OrdinalIgnoreCase)))
-				{
-					foreach (var line in _adminHelpText)
-					{
-						PlayerSay(speaker, ProconUtil.ProcessMessage(line, speaker, false, 0, "", false, this));
-					}
-					return message.Length <= 5;
-				}
 			}
-			else if (_extendedFunctions) //non-admin extended commands
-			{
-				if (message.StartsWith("help", StringComparison.OrdinalIgnoreCase) || message.StartsWith("rules", StringComparison.OrdinalIgnoreCase))
-				{
-					foreach (var line in _helpText)
-					{
-						PlayerSay(speaker, ProconUtil.ProcessMessage(line, speaker, false, 0, "", false, this));
-					}
-					return message.Length <= 5;
-				}
-			}
-
-			if (_extendedFunctions) //public extended commands
-			{
-				if (message.StartsWith("admin", StringComparison.OrdinalIgnoreCase))
-				{
-					var admns = Admins.ToArray(); //avoid multitasking interferences + multi enumeration
-					if (admns.Length > 0)
-					{
-						var sb = new StringBuilder(ProconUtil.ProcessMessage(_resOnlineAdmins, speaker, false, 0, "", false, this));
-						foreach (var admin in admns)
-						{
-							sb.Append(admin);
-							sb.Append(", ");
-						}
-						sb.Remove(sb.Length - 2, 2);
-						var txt = sb.ToString();
-						PlayerSay(speaker, txt);
-						AdminSay(speaker + " issued the !admin command");
-					}
-					else
-					{
-						PlayerSay(speaker, ProconUtil.ProcessMessage(_resNoOnlineAdmins, speaker, false, 0, "", false, this));
-					}
-					return message.Length == 5;
-				}
-			}
-
 			//public commands
 			if (message.StartsWith("langinfo", StringComparison.OrdinalIgnoreCase))
 			{
@@ -1095,10 +1006,7 @@ namespace PRoConEvents
 
 		internal void ShowRules(string target)
 		{
-			foreach (var line in _helpText)
-			{
-				PlayerSay(target, ProconUtil.ProcessMessage(line, target, false, 0, "", false, this));
-			}
+			// TODO ISSUE ADKATS RULES COMMAND
 		}
 
 		private bool ManuallyResetPlayer(string speaker, string player)
@@ -1135,8 +1043,8 @@ namespace PRoConEvents
 		 * Issue a punish over from AdKats. Called by adkats.
 		 * This command will always work. The incoming name is already normalized by AdKats)
 		 */
-		private void RemoteManuallyPunishPlayer(String name) { 
-			TakeMeasure(name, "(Triggered by Admin)", MeasureOverride.NoOverride);
+		public void RemoteManuallyPunishPlayer(params String[] commandParams) { 
+			TakeMeasure(commandParams[1], "(Triggered by Admin)", MeasureOverride.NoOverride);
 		}
 
 		/// <summary>
@@ -1300,7 +1208,6 @@ namespace PRoConEvents
 		protected internal bool _useAdKatsPunish;
 		protected internal bool _useAdKatsAdmins;
 		protected internal bool _logToAdKats;
-		protected bool _usePbGuid;
 		protected uint _killDelay = 1000;
 		protected uint _killOnspawnDelay = 3000;
 		private string[] admins;
@@ -1353,8 +1260,7 @@ namespace PRoConEvents
 
 		public override void OnPunkbusterPlayerInfo(CPunkbusterInfo playerInfo)
 		{
-			if (_usePbGuid)
-				CachePlayerInfo(playerInfo);
+			CachePlayerInfo(playerInfo);
 
 			if (Countries.ContainsKey(playerInfo.SoldierName))
 				Countries.Remove(playerInfo.SoldierName);
@@ -1441,8 +1347,7 @@ namespace PRoConEvents
 			try
 			{
 				Guids.Clear();
-				if (!_usePbGuid)
-					players.ForEach(CachePlayerInfo);
+				players.ForEach(CachePlayerInfo);
 				OnlinePlayerCount = players.Count;
 
 				if (_useAdKatsAdmins)
