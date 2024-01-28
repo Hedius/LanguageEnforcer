@@ -154,7 +154,7 @@ namespace PRoConEvents {
                 try {
                     string result;
                     using (var webClient = new WebClient()) {
-                        result = webClient.DownloadString("https://gitlab.com/e4gl/LanguageEnforcer/-/raw/main/version.txt");
+                        result = webClient.DownloadString("https://raw.githubusercontent.com/Hedius/LanguageEnforcer/main/version.txt");
                     }
 
                     if (result != GetPluginVersion()) {
@@ -1664,7 +1664,7 @@ namespace PRoConEvents {
         }
 
         public string GetPluginWebsite() {
-            return "gitlab.com/E4GL/LanguageEnforcer";
+            return "github.com/Hedius/LanguageEnforcer";
         }
 
         public string GetPluginDescription() {
