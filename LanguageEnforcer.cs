@@ -1477,7 +1477,7 @@ namespace PRoConEvents {
 
             WriteLog(string.Format("LanguageEnforcer: Player {0} temp/perma {1}muted over AdKats (Duration: {2})", player, force ? "force " : "", readable));
 
-            var commandKey = force ? "player_peristentmute_force" : "player_persistentmute";
+            var commandKey = force ? "player_persistentmute_force" : "player_persistentmute";
             ExecuteAdKatsCommand(commandKey, player, reason, commandNumeric);
         }
 
@@ -1636,7 +1636,7 @@ namespace PRoConEvents {
         }
 
         public string GetPluginVersion() {
-            return "1.0.7.0";
+            return "1.0.7.1";
         }
 
         public string GetPluginAuthor() {
